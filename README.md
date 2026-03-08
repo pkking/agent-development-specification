@@ -1,6 +1,6 @@
 # Claude 开发规范体系
 
-本仓库定义了团队使用 Claude Code 进行协作开发时的**三层规范体系**，确保 AI 辅助开发在团队、项目、个人三个维度上保持一致性。
+本仓库定义了团队使用Claude Code进行协作开发时的**三层规范体系**，确保AI辅助开发在团队、项目、个人三个维度上保持团队要求一致且个人风格保留。
 
 ---
 
@@ -39,7 +39,7 @@ Layer 1 · 团队层        本仓库 spec/teams/
 ## 目录结构
 
 ```
-README.md                                    # 本文件，体系总览
+README.md                                        # 本文件，体系总览
 │
 ├── spec/                                        # ★ 插件读取的实际规范内容
 │   ├── teams/                                   # Layer 1：团队级规范（对所有项目生效）
@@ -50,7 +50,12 @@ README.md                                    # 本文件，体系总览
 │   │       ├── coding/<lang>.md
 │   │       ├── testing.md
 │   │       ├── security.md
-│   │       └── docs-writing.md
+│   │       ├── docs-writing.md
+│   │       ├── git-workflow.md                  # Git 分支、Commit、PR 流程
+│   │       ├── api-design.md                    # API 设计（REST/gRPC）
+│   │       ├── database.md                      # 数据库设计与迁移
+│   │       ├── observability.md                 # 日志、指标、链路追踪
+│   │       └── release.md                       # 发布流程与回滚
 │   └── project-templates/                       # Layer 2：项目初始化模板
 │       └── golang/                              # Go 项目模板
 │           ├── CLAUDE.md
@@ -88,17 +93,22 @@ Claude Code 插件会在以下时机自动将 `spec/` 中的规范注入到对�
 
 团队所有成员都应参与规范的演进，而非只有技术负责人才能修改。
 
-| 文件                                                    | 说明                                   | 维护方式                     |
-| ------------------------------------------------------- | -------------------------------------- | ---------------------------- |
-| `spec/teams/docs/standards/architecture.md`             | 架构原则与 ADR 机制                    | 架构师主导，PR Review 决策   |
-| `spec/teams/docs/standards/coding/base.md`              | 通用编码规范（语言无关）               | 全员提 PR，技术负责人 Review |
-| `spec/teams/docs/standards/coding/go.md`                | Go 专项规范                            | Go 开发者维护                |
-| `spec/teams/docs/standards/coding/python.md`            | Python 专项规范                        | Python 开发者维护            |
-| `spec/teams/docs/standards/coding/typescript.md`        | TypeScript 专项规范                    | 前端/TS 开发者维护           |
-| `spec/teams/docs/standards/testing.md`                  | 测试策略与规范                         | 全员提 PR                    |
-| `spec/teams/docs/standards/security.md`                 | 安全开发规范                           | 安全负责人 + 全员提 PR       |
-| `spec/teams/docs/standards/docs-writing.md`             | 文档写作规范                           | 全员提 PR                    |
-| `spec/project-templates/<lang>/docs/standards/build.md` | 构建规范模板，**项目初始化后必须填写** | 项目负责人负责，开发者补充   |
+| 文件                             <br/>                    | 说明                    | 维护方式                |
+|---------------------------------------------------------|-----------------------|---------------------|
+| `spec/teams/docs/standards/architecture.md`             | 架构原则与 ADR 机制          | 架构师主导，PR Review 决策  |
+| `spec/teams/docs/standards/coding/base.md`              | 通用编码规范（语言无关）          | 全员提 PR，技术负责人 Review |
+| `spec/teams/docs/standards/coding/go.md`                | Go 专项规范               | Go 开发者维护            |
+| `spec/teams/docs/standards/coding/python.md`            | Python 专项规范           | Python 开发者维护        |
+| `spec/teams/docs/standards/coding/typescript.md`        | TypeScript 专项规范       | 前端/TS 开发者维护         |
+| `spec/teams/docs/standards/testing.md`                  | 测试策略与规范               | 全员提 PR              |
+| `spec/teams/docs/standards/security.md`                 | 安全开发规范                | 安全负责人 + 全员提 PR      |
+| `spec/teams/docs/standards/docs-writing.md`             | 文档写作规范                | 全员提 PR              |
+| `spec/teams/docs/standards/git-workflow.md`             | Git 工作流规范（分支、Commit、PR） | 全员提 PR，技术负责人 Review |
+| `spec/teams/docs/standards/api-design.md`               | API 设计规范（REST/gRPC）     | 架构师主导，全员提 PR        |
+| `spec/teams/docs/standards/database.md`                 | 数据库设计与迁移规范             | DBA + 后端开发者维护       |
+| `spec/teams/docs/standards/observability.md`            | 日志与可观测性规范              | SRE / 后端开发者维护       |
+| `spec/teams/docs/standards/release.md`                  | 发布流程与回滚规范              | 技术负责人主导，全员提 PR      |
+| `spec/project-templates/<lang>/docs/standards/build.md` | 构建规范模板，**项目初始化后必须填写** | 项目负责人负责，开发者补充       |
 
 > **参考示例见 `specification-example/`，搜索 `[团队填写]` 找到所有待集体决策的空白。**
 
@@ -106,11 +116,11 @@ Claude Code 插件会在以下时机自动将 `spec/` 中的规范注入到对�
 
 Commands 是效率工具，鼓励全员贡献。好的个人命令应提升为项目或团队命令。
 
-| 层级   | 位置                                              | 维护者       | 当前内容                                       |
-| ------ | ------------------------------------------------- | ------------ | ---------------------------------------------- |
-| 团队层 | `spec/project-templates/<lang>/.claude/commands/` | 技术负责人   | 新项目初始化时注入                             |
-| 项目层 | `<project>/.claude/commands/`                     | 项目团队全员 | `/review` `/test` `/migrate`（示例，按需扩展） |
-| 个人层 | `~/.claude/commands/`                             | 个人自维护   | 不提交仓库，个人沉淀                           |
+| 层级  | 位置                                                | 维护者    | 当前内容                                  |
+|-----|---------------------------------------------------|--------|---------------------------------------|
+| 团队层 | `spec/project-templates/<lang>/.claude/commands/` | 技术负责人  | 新项目初始化时注入                             |
+| 项目层 | `<project>/.claude/commands/`                     | 项目团队全员 | 9 个示例命令（见下方列表，按需扩展） |
+| 个人层 | `~/.claude/commands/`                             | 个人自维护  | 不提交仓库，个人沉淀                            |
 
 **协作流程：**
 
@@ -123,30 +133,41 @@ Commands 是效率工具，鼓励全员贡献。好的个人命令应提升为�
     ↓ 新项目初始化时自动包含
 ```
 
-**扩展建议：** 以下场景适合沉淀为团队命令（欢迎贡献）：
+**已提供的示例命令：**
 
-- `/debug`：系统性排查 bug（读日志 → 假设 → 验证）
-- `/release-note`：从 git log 生成发布说明
-- `/security-check`：针对 PR 的安全专项检查
+| 命令 | 用途 |
+| --- | --- |
+| `/review` | 对当前改动做全面代码 Review |
+| `/test` | 为指定文件或功能生成单元测试 |
+| `/migrate` | 创建数据库迁移文件 |
+| `/debug` | 系统性排查 Bug（假设 → 验证 → 修复） |
+| `/release-note` | 从 git log 生成发布说明 |
+| `/adr` | 创建架构决策记录（ADR） |
+| `/security-check` | 对当前改动做安全专项检查 |
+| `/refactor` | 指导安全重构（保持行为不变） |
+| `/api-design` | 设计 API 接口（遵循 API 规范） |
+
+**欢迎继续贡献新命令：**
+
 - `/onboard`：新成员项目快速上手引导
-- `/adr`：创建架构决策记录（ADR）
+- 更多领域命令（按团队实际需求沉淀）
 
 ### Hooks 配置（.claude/settings.json）
 
 Hooks 是 Claude Code 的自动化防护层，应随项目成熟度逐步加强。
 
-| 层级               | 位置                              | 维护者     | 提交仓库                     |
-| ------------------ | --------------------------------- | ---------- | ---------------------------- |
+| 层级        | 位置                                | 维护者   | 提交仓库             |
+|-----------|-----------------------------------|-------|------------------|
 | 项目层（团队共享） | `<project>/.claude/settings.json` | 项目负责人 | **是**（质量门禁对全员生效） |
-| 个人层（个人偏好） | `~/.claude/settings.json`         | 个人       | 否                           |
+| 个人层（个人偏好） | `~/.claude/settings.json`         | 个人    | 否                |
 
 **当前项目模板已包含的 Hooks（`project/.claude/settings.json`）：**
 
-| Hook           | 事件                       | 作用                                  |
-| -------------- | -------------------------- | ------------------------------------- |
-| 阻止 push main | `PreToolUse` (Bash)        | 防止 Claude 直接推送到保护分支        |
+| Hook         | 事件                         | 作用                     |
+|--------------|----------------------------|------------------------|
+| 阻止 push main | `PreToolUse` (Bash)        | 防止 Claude 直接推送到保护分支    |
 | 自动 lint      | `PostToolUse` (Edit/Write) | 文件修改后自动检查，结果反馈给 Claude |
-| 完成通知       | `Stop`                     | 长任务完成后发送桌面通知              |
+| 完成通知         | `Stop`                     | 长任务完成后发送桌面通知           |
 
 **建议逐步补充的 Hooks：**
 
@@ -195,10 +216,15 @@ cp specification-example/personal/CLAUDE.md ~/.claude/CLAUDE.md
 
 团队级规范存放在本仓库 `spec/teams/docs/standards/`，涵盖：
 
-- 编码规范（通用 + 各语言专项）
+- 编码规范（通用 + Go / Python / TypeScript 专项）
 - 测试策略
 - 安全开发要求
 - 文档写作规范
+- Git 工作流（分支、Commit、PR 流程）
+- API 设计（REST/gRPC）
+- 数据库设计与迁移
+- 日志与可观测性
+- 发布流程与回滚
 
 插件会自动将这些规范注入 Claude 上下文，通常无需手动阅读全部，但遇到规范相关问题时可直接查阅。
 
@@ -212,7 +238,7 @@ cp specification-example/personal/CLAUDE.md ~/.claude/CLAUDE.md
 
 - 项目根目录 `CLAUDE.md`（含团队规范引用）
 - `.claude/settings.json`（Hooks：防护 + 自动 lint + 完成通知）
-- `.claude/commands/`（`/review` `/test` `/migrate` 等基础命令）
+- `.claude/commands/`（9 个基础命令：`/review` `/test` `/migrate` `/debug` `/release-note` `/adr` `/security-check` `/refactor` `/api-design`）
 - `docs/standards/build.md`（待填写的构建规范模板）
 
 **方式二：手动复制**
@@ -264,17 +290,22 @@ git commit -m "feat: add /<command-name> command for <用途>"
 
 ## 文件命名约定
 
-| 规范类型   | 文件名                            | 层级         |
-| ---------- | --------------------------------- | ------------ |
-| 架构规范   | `docs/standards/architecture.md`  | 团队 / 项目  |
-| 编码基础   | `docs/standards/coding/base.md`   | 团队         |
-| 语言规范   | `docs/standards/coding/<lang>.md` | 团队         |
-| 测试规范   | `docs/standards/testing.md`       | 团队         |
-| 安全规范   | `docs/standards/security.md`      | 团队         |
-| 文档规范   | `docs/standards/docs-writing.md`  | 团队         |
-| 构建规范   | `docs/standards/build.md`         | 项目（必填） |
-| 自定义命令 | `.claude/commands/<name>.md`      | 项目 / 个人  |
-| Hooks 配置 | `.claude/settings.json`           | 项目 / 个人  |
+| 规范类型     | 文件名                            | 层级         |
+| ------------ | --------------------------------- | ------------ |
+| 架构规范     | `docs/standards/architecture.md`  | 团队 / 项目  |
+| 编码基础     | `docs/standards/coding/base.md`   | 团队         |
+| 语言规范     | `docs/standards/coding/<lang>.md` | 团队         |
+| 测试规范     | `docs/standards/testing.md`       | 团队         |
+| 安全规范     | `docs/standards/security.md`      | 团队         |
+| 文档规范     | `docs/standards/docs-writing.md`  | 团队         |
+| Git 工作流   | `docs/standards/git-workflow.md`  | 团队         |
+| API 设计     | `docs/standards/api-design.md`    | 团队         |
+| 数据库设计   | `docs/standards/database.md`      | 团队         |
+| 可观测性     | `docs/standards/observability.md` | 团队         |
+| 发布流程     | `docs/standards/release.md`       | 团队         |
+| 构建规范     | `docs/standards/build.md`         | 项目（必填） |
+| 自定义命令   | `.claude/commands/<name>.md`      | 项目 / 个人  |
+| Hooks 配置   | `.claude/settings.json`           | 项目 / 个人  |
 
 ---
 

@@ -4,11 +4,17 @@
 
 ## 命令索引
 
-| 命令       | 文件         | 说明                             |
-| ---------- | ------------ | -------------------------------- |
-| `/review`  | `review.md`  | 对当前 git 改动做全面代码 Review |
-| `/test`    | `test.md`    | 为指定文件或功能描述生成单元测试 |
-| `/migrate` | `migrate.md` | 创建数据库迁移文件               |
+| 命令              | 文件                | 说明                             |
+| ----------------- | ------------------- | -------------------------------- |
+| `/review`         | `review.md`         | 对当前 git 改动做全面代码 Review |
+| `/test`           | `test.md`           | 为指定文件或功能描述生成单元测试 |
+| `/migrate`        | `migrate.md`        | 创建数据库迁移文件               |
+| `/debug`          | `debug.md`          | 系统性排查 Bug（假设→验证→修复） |
+| `/release-note`   | `release-note.md`   | 从 git log 生成发布说明          |
+| `/adr`            | `adr.md`            | 创建架构决策记录（ADR）          |
+| `/security-check` | `security-check.md` | 对当前改动做安全专项检查         |
+| `/refactor`       | `refactor.md`       | 指导安全重构（保持行为不变）     |
+| `/api-design`     | `api-design.md`     | 设计 API 接口（遵循 API 规范）   |
 
 ## 如何新增命令
 

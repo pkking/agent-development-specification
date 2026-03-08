@@ -15,6 +15,11 @@ Claude 在本项目中工作时，请阅读并遵循以下规范文件：
 - **测试规范** → `docs/standards/testing.md`
 - **安全规范** → `docs/standards/security.md`
 - **文档写作规范** → `docs/standards/docs-writing.md`
+- **Git 工作流规范** → `docs/standards/git-workflow.md`
+- **API 设计规范** → `docs/standards/api-design.md`
+- **数据库设计规范** → `docs/standards/database.md`
+- **日志与可观测性规范** → `docs/standards/observability.md`
+- **发布流程规范** → `docs/standards/release.md`
 
 ---
 
