@@ -5,7 +5,9 @@
 ---
 
 ## 依赖
+
 依赖Prettier组件用于格式化markdown等文件, 安装指令:
+
 ```
 npm install --save-dev --save-exact prettier
 ```
@@ -48,7 +50,12 @@ specification-example/
 │       │   └── typescript.md           # TypeScript 专项规范
 │       ├── docs-writing.md             # 文档写作规范
 │       ├── security.md                 # 安全开发规范
-│       └── testing.md                  # 测试策略与规范
+│       ├── testing.md                  # 测试策略与规范
+│       ├── git-workflow.md             # Git 分支、Commit、PR 流程
+│       ├── api-design.md              # API 设计（REST/gRPC）
+│       ├── database.md                # 数据库设计与迁移
+│       ├── observability.md           # 日志、指标、链路追踪
+│       └── release.md                 # 发布流程与回滚
 ├── project/                            # Layer 2：项目级规范模板
 │   ├── CLAUDE.md                       # 项目 Claude 入口模板（含占位符，需按项目填写）
 │   ├── .claude/
@@ -58,7 +65,13 @@ specification-example/
 │   │       ├── README.md               # 命令列表索引
 │   │       ├── review.md               # /review：全面代码 Review
 │   │       ├── test.md                 # /test：生成单元测试
-│   │       └── migrate.md              # /migrate：创建数据库迁移
+│   │       ├── migrate.md              # /migrate：创建数据库迁移
+│   │       ├── debug.md                # /debug：系统性排查 Bug
+│   │       ├── release-note.md         # /release-note：生成发布说明
+│   │       ├── adr.md                  # /adr：创建架构决策记录
+│   │       ├── security-check.md       # /security-check：安全专项检查
+│   │       ├── refactor.md             # /refactor：安全重构
+│   │       └── api-design.md           # /api-design：设计 API 接口
 │   └── docs/standards/
 │       ├── build.md                    # 构建规范（每个项目必须填写）
 │       └── architecture.md             # 项目架构说明（可选，覆盖团队层）
