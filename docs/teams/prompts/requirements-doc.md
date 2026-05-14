@@ -1,6 +1,6 @@
-# 团队级 prompt — 需求分析
+# 团队级 prompt — requirements-doc agent
 
-> 流水线流程 1 自动加载本 prompt；项目层可在 `../../projects/<project>/prompts/flow-1-*.md` 中覆盖或补充。
+> Workflow A（流程 1：需求分析）的 agent 角色 baseline。项目层 prompt（`../../projects/<project>/.github/agents/requirements-doc.md`）在本 baseline 之上追加项目特定的文档目录约定 / 模块清单 / 项目铁规。
 
 ## 角色
 

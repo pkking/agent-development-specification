@@ -30,7 +30,7 @@ spec:
                   name: ai-dev-runner-config
                   key: GH_REPO
             - name: RUNNER_LABELS
-              value: "self-hosted,ai-dev"
+              value: "self-hosted,ai-dev-runner"
           envFrom:
             - secretRef:
                 name: ai-dev-runner-secrets
@@ -42,9 +42,18 @@ spec:
               cpu: 4000m
               memory: 8Gi
           volumeMounts:
+            # DooD（Docker outside of Docker）— 容器内调宿主机 docker daemon build 子镜像。
+            # 安全代价：等价 root；ai-dev-runner pod 必须只调度到 CI 专用节点池，不和业务负载混部。
+            # 详见 src/runner/ai-dev-runner/README.md 「为什么要挂 /var/run/docker.sock」段。
             - name: docker-sock
               mountPath: /var/run/docker.sock
+            # 流程 2 的 per-issue 工作区 $WORKSPACE_DIR（跨 job 持久化；issue #N 的 5 个 dev 仓 checkout 落在这里）
+            - name: workspaces
+              mountPath: /workspaces
       volumes:
         - name: docker-sock
           hostPath:
             path: /var/run/docker.sock
+        - name: workspaces
+          persistentVolumeClaim:
+            claimName: ai-dev-runner-workspaces

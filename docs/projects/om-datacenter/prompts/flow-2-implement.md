@@ -1,6 +1,6 @@
 # 数据中台 — 流程 2 项目化 Prompt
 
-> 团队 prompt [`../../../teams/prompts/development.md`](../../../teams/prompts/development.md) 之后追加加载。
+> 团队 prompt [`../../../teams/prompts/dev.md`](../../../teams/prompts/dev.md) 之后追加加载。
 
 ## 项目专属补充
 
@@ -16,4 +16,4 @@
 
 ## 关联
 
-- 团队 prompt：[`../../../teams/prompts/development.md`](../../../teams/prompts/development.md)
+- 团队 prompt：[`../../../teams/prompts/dev.md`](../../../teams/prompts/dev.md)

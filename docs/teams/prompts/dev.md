@@ -1,6 +1,6 @@
-# 团队级 prompt — 开发实现
+# 团队级 prompt — dev agent
 
-> 流水线流程 2 启动时，dev agent 自动加载本 prompt；与 review / tester agent 多轮对抗。
+> 4 agent 对抗循环里的「实现」角色 baseline（Workflow B 第 2 棒）。项目层 prompt（`../../projects/<project>/.github/agents/dev.md`）在本 baseline 之上追加项目特定的子仓清单 / 基础分支 / 敏感文件 git-ignore 清单 / 子仓特殊代码约定（如 APIMagic 的 .ms 写法）。
 
 ## 角色
 

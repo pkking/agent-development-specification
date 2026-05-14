@@ -34,4 +34,4 @@
 
 - 团队测试规范：[`../../teams/standards/testing.md`](../../teams/standards/testing.md)
 - 测试经验：[`../../teams/context/experience/测试策略编写经验.md`](../../teams/context/experience/测试策略编写经验.md)
-- tester agent prompt：[`../../teams/prompts/test-strategy.md`](../../teams/prompts/test-strategy.md)
+- tester agent prompt：[`../../teams/prompts/tester.md`](../../teams/prompts/tester.md)

@@ -1,6 +1,6 @@
-# 团队级 prompt — 架构设计
+# 团队级 prompt — design agent
 
-> 流水线流程 2 启动时，design agent 自动加载本 prompt。
+> 4 agent 对抗循环里的「设计」角色 baseline（Workflow B 第 1 棒）。项目层 prompt（`../../projects/<project>/.github/agents/design.md`）在本 baseline 之上追加项目特定的路由规则 / 例外清单 / 接口约定。
 
 ## 角色
 

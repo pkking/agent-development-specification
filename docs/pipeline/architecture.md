@@ -125,7 +125,9 @@ runner pod 在 $GITHUB_WORKSPACE 跑 yml 步骤
 
 **怎么做**：在 issue 评论 `/accepts`，并打 `accepted` 标签。
 
-**系统做什么**：backlog 仓 forward workflow 自动在该 issue 上贴一条菜单评论，列出 3 个后续触发词。
+**系统做什么**：backlog 仓的 **forward workflow** 自动在该 issue 上贴一条菜单评论，列出 3 个后续触发词。
+
+> **forward workflow 是什么** — 跨仓事件转发器。`accepted` 标签 + `[<服务名>需求]` 评论的组合触发它「贴菜单 + 把后续触发词转发到 umbrella 仓」。完整说明见 [`../teams/external-workflows/README.md`](../teams/external-workflows/README.md)，源码见 [`forward-to-datacenter.yml`](../teams/external-workflows/forward-to-datacenter.yml)。
 
 **评论模板（菜单评论的项目专属版本）**：项目层 prompt，例如：
 
@@ -146,7 +148,7 @@ runner pod 在 $GITHUB_WORKSPACE 跑 yml 步骤
 
 **怎么做**：在 issue 评论 `[<服务名>需求]`（例 `[数据中台需求]` / `[小数需求]`）。
 
-**系统做什么**：机器人贴一条菜单评论，列出可用命令。
+**系统做什么**：backlog 仓的 forward workflow 贴一条菜单评论，列出可用命令；后续 `[<服务名>需求分析]`/`[实现]`/`[上线]` 评论也由它转发到 umbrella 仓的 issue-1/2/3 yml。详见 [`../teams/external-workflows/README.md`](../teams/external-workflows/README.md)。
 
 **评论模板**：
 
@@ -278,7 +280,7 @@ ai-dev-runner 跑在 K8s pod 里、以非 root 用户 `runner` 运行（见 [`..
 |---|---|---|---|---|---|
 | ① | **design** | [`../projects/om-datacenter/.github/agents/design.md`](../projects/om-datacenter/.github/agents/design.md) | umbrella [`../projects/om-datacenter/CLAUDE.md`](../projects/om-datacenter/CLAUDE.md) + 各 dev 子仓自己的 `CLAUDE.md`（在 `$WORKSPACE_DIR/<submodule>/CLAUDE.md`） | issue.txt + requirement_analysis.md | `/tmp/opencode/route.json`（路由 + target_repos）+ `/tmp/opencode/design.md`（含可量化验收标准） |
 | ② | **dev** | [`../projects/om-datacenter/.github/agents/dev.md`](../projects/om-datacenter/.github/agents/dev.md) | 同上（umbrella + 各 dev 子仓） | design.md + route.json | 改各 dev 仓代码 + commit/push `<BRANCH>` + 开 PR + `/tmp/opencode/result.json` + `change_summary.md` |
-| ③ | **deploy**（脚本非 agent） | — | — | result.json 的 PR 列表 | 各 PR 一个 nginx Ingress 预览 URL；写 `/tmp/opencode/deploy/pr-<N>.json` |
+| ③ | **deploy**（脚本非 agent） | [`../src/deployer/deploy.py`](../src/deployer/deploy.py) — 详见 §5.2.4 | — | result.json 的 PR 列表 + `.preview/service.yaml` | 各 PR 一个 nginx Ingress 预览 URL；写 `/tmp/opencode/deploy/pr-<N>.json` |
 | ④ | **tester** | [`../projects/om-datacenter/.github/agents/tester.md`](../projects/om-datacenter/.github/agents/tester.md) | 同上 | design.md 验收标准 + 各 PR 预览 + apimagic_endpoints | `test_report.md`（4 类测试逐项）+ `test_fail.md`（打回清单）+ `test_retro.md` |
 | ⑤ | **review** | [`../projects/om-datacenter/.github/agents/review.md`](../projects/om-datacenter/.github/agents/review.md) | 同上 | 各 PR diff + gates 结果 | `review_report.md` + `review_fail.md`（打回清单） |
 | feedback | — | — | — | tester + review 的打回清单 | 合成 `/tmp/opencode/feedback.md` 回给 dev / design 重跑 |
@@ -318,6 +320,51 @@ ai-dev-runner 跑在 K8s pod 里、以非 root 用户 `runner` 运行（见 [`..
 ```
 
 详尽规则与示例：[`../teams/CLAUDE.md`](../teams/CLAUDE.md) 顶部段。
+
+### 5.2.4 deploy 这一步到底干了什么（脚本非 agent）
+
+> deploy 是 orchestrate.sh 在 dev 产出 PR 后、review/tester 跑之前调的脚本，不是 agent。**完整文档**：[`generic-layer/deployer.md`](generic-layer/deployer.md)（10 节，覆盖入参/出参/模式/模板/清理/promote/谁跑它）。
+
+**调用方**：`orchestrate.sh` 读 `/tmp/opencode/result.json` 的 PR 列表，对每个 PR 跑一次：
+
+```
+python3 src/deployer/deploy.py \
+    --project   <project> \
+    --service   <service> \
+    --mode      <dev-pod|data-pod|shared|none>   # 由 .preview/service.yaml deploy_mode 决定
+    --image     <registry>/<repo>:<pr-tag> \
+    --pr-number <N> \
+    --namespace <NAMESPACE> \
+    --base-domain <BASE_DOMAIN>                  # 如 ai.test.osinfra.cn
+  > /tmp/opencode/deploy/pr-<N>.json
+```
+
+**deploy.py 内部 7 步**（详细见 [deployer.md §4](generic-layer/deployer.md#4-详细部署流程)）：
+
+```
+1. 读 .preview/service.yaml             ← 项目仓配置入口
+2. 选模板（src/deployer/templates/<mode>/）
+3. 渲染（替换 ${PROJECT} / ${PR_NUMBER} / ${IMAGE_FULL} / ${NAMESPACE} / ${BASE_DOMAIN}）
+4. kubectl apply                        ← 用 KUBECONFIG secret
+5. kubectl wait readiness               ← 默认 120s
+6. 收集 preview URL + ClusterIP + pod 状态 → JSON 输出到 stdout
+7. 失败 → kubectl describe + pod logs tail 进 report 字段
+```
+
+**预览资源命名**：`preview-<service>-pr<N>`（Deployment / Service / Ingress 同名；Ingress host = `<service>-<N>.<base-domain>`）。
+
+**4 种 deploy_mode 速查**（详尽：[deployer.md §2](generic-layer/deployer.md#2-4-种部署模式)）：
+
+| 模式 | 啥时候用 |
+|---|---|
+| `dev-pod` | 单 PR 独立后端（如 APIMagic per-PR） |
+| `data-pod` | 含 DB / cache / Vector（如 om-dataarts） |
+| `shared` | 多 PR 共享后端（如 datastat 前端） |
+| `none` | 工具仓 / 文档仓（如 om-deployment） |
+
+**退出码**：0=就绪 / 2=入参错 / 3=apply 失败 / 4=readiness 超时 / 99=内部错。任一非 0 → orchestrate.sh 把 `pr-<N>.json` 的 `report` 字段直接传给 tester 作打回输入，本轮算失败。
+
+**为啥不另起 k8s-deployer 跑**：流程 2 内 ai-dev-runner 已经有 KUBECONFIG 也持有当前 issue 上下文，少一跳。k8s-deployer 专给「不该把宽 K8s 权限给 ai-dev-runner」的项目用（旁支 PR preview workflow 用它）。runner 边界见 [runners.md §3.1](generic-layer/runners.md#31-角色)。
 
 ### 5.3 5 个 agent 的角色边界（对抗规则）
 

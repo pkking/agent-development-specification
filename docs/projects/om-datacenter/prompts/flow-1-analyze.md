@@ -1,6 +1,6 @@
 # 数据中台 — 流程 1 项目化 Prompt
 
-> 团队 prompt [`../../../teams/prompts/requirement-analysis.md`](../../../teams/prompts/requirement-analysis.md) 之后追加加载。
+> 团队 prompt [`../../../teams/prompts/requirements-doc.md`](../../../teams/prompts/requirements-doc.md) 之后追加加载。
 
 ## 项目专属补充
 
@@ -12,4 +12,4 @@
 
 ## 关联
 
-- 团队 prompt：[`../../../teams/prompts/requirement-analysis.md`](../../../teams/prompts/requirement-analysis.md)
+- 团队 prompt：[`../../../teams/prompts/requirements-doc.md`](../../../teams/prompts/requirements-doc.md)

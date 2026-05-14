@@ -8,7 +8,7 @@
 |---|---|
 | 入口评论 | `[<服务名>需求分析]` |
 | 跑在哪 | ai-dev-runner |
-| 加载 prompt | [`../../teams/prompts/requirement-analysis.md`](../../teams/prompts/requirement-analysis.md) + 项目层覆盖（如有） |
+| 加载 prompt | [`../../teams/prompts/requirements-doc.md`](../../teams/prompts/requirements-doc.md) + 项目层覆盖（如有） |
 | 工具 | Claude CLI + gh |
 
 ## 2. 步骤
@@ -39,6 +39,6 @@
 
 ## 7. 关联
 
-- 团队 prompt：[`../../teams/prompts/requirement-analysis.md`](../../teams/prompts/requirement-analysis.md)
+- 团队 prompt：[`../../teams/prompts/requirements-doc.md`](../../teams/prompts/requirements-doc.md)
 - 全景：[`../architecture.md`](../architecture.md)
 - 流程 2：[`flow-2-implementation.md`](flow-2-implementation.md)
