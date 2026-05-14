@@ -102,6 +102,10 @@ deployment.yaml 里有 hostPath 挂 `/var/run/docker.sock` 到容器内。**原�
 | [deployment.yaml](deployment.yaml) | K8s Deployment |
 | [rbac.yaml](rbac.yaml) | ServiceAccount + Role + RoleBinding |
 | [configmap.yaml](configmap.yaml) | 非敏感配置 |
+| [pvc.yaml](pvc.yaml) | `/workspaces` 持久卷（流程 2 per-issue 工作区） |
+| [secret-example.yaml](secret-example.yaml) | Secret 字段示例（**不要 apply 这个**，复制改值后落本地，加 .gitignore；或直接 `kubectl create secret generic`） |
+
+> 关于 `entrypoint.sh` 里调用的 `./config.sh` 和 `./run.sh`：**不在本仓**，由 Dockerfile 下载 actions-runner tarball 并 `tar xzf` 到 `/home/runner/actions-runner/` 提供（entrypoint 头部注释写了）。entrypoint 加了 preflight 检查，缺则报错退出。
 
 ## 升级 / 扩容 / 故障
 

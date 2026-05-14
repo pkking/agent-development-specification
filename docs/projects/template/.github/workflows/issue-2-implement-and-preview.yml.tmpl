@@ -1,0 +1,170 @@
+# Workflow B — 实现 + 预览（流程 2）
+# 复制到项目 umbrella 仓的 .github/workflows/issue-2-implement-and-preview.yml；按下方 << >> 占位符替换。
+#
+# 触发：评论 [<<TRIGGER_PREFIX>>需求实现]，或跨仓 dispatch event_type=backlog_implement
+# 逻辑全在 src/orchestrate.sh + .github/agents/{design,dev,review,tester}.md + CLAUDE.md
+# 本 yaml 只负责：算名字 → checkout + 各 dev submodule → 装 LLM CLI → 拉 issue → 调脚本
+#
+# 完整 spec：../../../pipeline/stage-flow/flow-2-implementation.md
+# 5 个 agent 入口：../agents/
+# 编排：../../../src/orchestrator/orchestrate.sh
+
+name: 2️⃣ <<PROJECT_DISPLAY_NAME>> 实现 + 预览
+
+on:
+  issue_comment:
+    types: [created]
+  repository_dispatch:
+    types: [backlog_implement]
+
+concurrency:
+  group: needs-implementation-${{ github.event.issue.number || github.event.client_payload.issue_number }}-${{ github.event.client_payload.source_repo || github.repository }}
+  cancel-in-progress: false
+
+permissions:
+  issues: write
+  contents: write
+  pull-requests: write
+
+jobs:
+  implement:
+    if: |
+      github.event_name == 'repository_dispatch' ||
+      (github.event_name == 'issue_comment' &&
+        github.event.issue.state == 'open' &&
+        startsWith(github.event.comment.body, '[<<TRIGGER_PREFIX>>需求实现]'))
+    runs-on: [self-hosted, ai-dev-runner]
+    timeout-minutes: 90
+    env:
+      HOME: /home/runner
+      SOURCE_REPO:  ${{ github.event.client_payload.source_repo || github.repository }}
+      ISSUE_NUMBER: ${{ github.event.client_payload.issue_number || github.event.issue.number }}
+      ISSUE_TITLE:  ${{ github.event.issue.title || github.event.client_payload.issue_title }}
+      MAX_FIX_ROUNDS: ${{ vars.GATE_FIX_ROUNDS || '3' }}
+      DOCS_REPO:    ${{ vars.BACKLOG_DOCS_REPO || '<<BACKLOG_REPO>>' }}
+      # 部署相关（被 orchestrate.sh + deploy.py 用）
+      DEPLOY_MODE:  <<DEPLOY_MODE>>      # dev-pod / data-pod / shared / none
+      NAMESPACE:    <<NAMESPACE>>        # 如 ai-test
+      BASE_DOMAIN:  <<BASE_DOMAIN>>      # 如 ai.test.osinfra.cn
+      PROJECT:      <<PROJECT_NAME>>     # 如 om-datacenter
+
+    steps:
+      - name: Pre-clean workspace
+        run: |
+          rm -rf "$GITHUB_WORKSPACE"/* 2>/dev/null || true
+          mkdir -p "$GITHUB_WORKSPACE"
+
+      - name: Compute names (BRANCH = <source-repo 短名>-issue-<N>)
+        shell: bash
+        run: |
+          SHORT="${SOURCE_REPO##*/}"
+          HANDLING="${GITHUB_REPOSITORY##*/}"
+          {
+            echo "SOURCE_REPO_SHORT=$SHORT"
+            echo "HANDLING_REPO=$HANDLING"
+            echo "BRANCH=${SHORT}-issue-${ISSUE_NUMBER}"
+            echo "WS_NAME=${SHORT}-issue-${ISSUE_NUMBER}"
+          } >> "$GITHUB_ENV"
+
+      - name: Checkout umbrella (no auto-submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+          token: ${{ secrets.CROSS_REPO_TOKEN }}
+          fetch-depth: 0
+
+      - name: Init dev submodules with admin token
+        shell: bash --noprofile --norc {0}
+        env:
+          GH_TOKEN: ${{ secrets.BACKLOG_REPO_TOKEN || secrets.CROSS_REPO_TOKEN }}
+        run: |
+          # 不写死 dev 仓清单 —— 从 .gitmodules 枚举。每个项目自己维护 .gitmodules 即可
+          SUBS="$(git config -f .gitmodules --get-regexp 'submodule\..*\.path' 2>/dev/null | awk '{print $2}')"
+          git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/" || true
+          ok=""; bad=""
+          for d in $SUBS; do
+            if git submodule update --init -- "$d" >/dev/null 2>&1 && [ -e "$d/.git" ]; then
+              ok="$ok $d"
+            else
+              bad="$bad $d"
+              echo "::warning::submodule $d 拉取失败，agent 会跳过该仓"
+            fi
+          done
+          git config --global --unset-all url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf || true
+          [ -z "$ok" ] && { echo "::error::所有 dev 子仓都没拉下来"; exit 1; } || true
+
+      - name: Configure git
+        shell: bash --noprofile --norc {0}
+        env:
+          GH_TOKEN: ${{ secrets.BACKLOG_REPO_TOKEN || secrets.CROSS_REPO_TOKEN }}
+        run: |
+          git config --global user.name  "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          SUBS="$(git config -f .gitmodules --get-regexp 'submodule\..*\.path' 2>/dev/null | awk '{print $2}')"
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          for d in $SUBS; do git config --global --add safe.directory "$GITHUB_WORKSPACE/$d"; done
+          git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
+
+      - name: Setup LLM CLI env (per-issue workspace on PVC)
+        shell: bash
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        run: |
+          WS=/workspaces/${HANDLING_REPO}/${WS_NAME}
+          mkdir -p "$WS" /tmp/opencode "$HOME/.local/share/opencode/log" "$HOME/.config/opencode"
+          # opencode 鉴权（用 Claude CLI 时改写 $HOME/.config/claude）
+          printf '{"alibaba-cn":{"type":"api","key":"%s"}}\n' "$OPENCODE_API_KEY" > "$HOME/.local/share/opencode/auth.json"
+          chmod 600 "$HOME/.local/share/opencode/auth.json"
+          printf '{"$schema":"https://opencode.ai/config.json"}\n' > "$HOME/.config/opencode/opencode.json"
+          echo "WORKSPACE_DIR=$WS" >> "$GITHUB_ENV"
+
+      - name: Fetch issue + comments → /tmp/opencode/issue.txt
+        uses: ./.github/actions/fetch-issue
+        with:
+          issue-number: ${{ env.ISSUE_NUMBER }}
+          source-repo:  ${{ env.SOURCE_REPO }}
+          github-token: ${{ secrets.BACKLOG_REPO_TOKEN || secrets.CROSS_REPO_TOKEN || github.token }}
+
+      - name: 准备需求文档 → /tmp/opencode/requirement_analysis.md
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.BACKLOG_REPO_TOKEN || secrets.CROSS_REPO_TOKEN || github.token }}
+        run: |
+          rm -f /tmp/opencode/requirement_analysis.md
+          case "$ISSUE_TITLE" in
+            *"[需求]"*)
+              RA_PATH="opensourceways/${SOURCE_REPO_SHORT}/issue_docs/${ISSUE_NUMBER}/Requirement%20Analysis/%23${ISSUE_NUMBER}%20Requirement%20Analysis%20Specification.md"
+              gh api "repos/${DOCS_REPO}/contents/${RA_PATH}" -q '.content' 2>/dev/null \
+                | base64 -d > /tmp/opencode/requirement_analysis.md 2>/dev/null || \
+                echo "::error::[需求] 类 issue，但 backlog 的需求分析说明书取不到（可能 PR 还没合）"
+              ;;
+            *)
+              awk '/<!--[[:space:]]*USER_VIEW_DOC[[:space:]]*-->/{f=1;next} f&&/^---$/{exit} f{print}' \
+                /tmp/opencode/issue.txt > /tmp/opencode/_uv.txt 2>/dev/null || true
+              if [ -s /tmp/opencode/_uv.txt ]; then
+                { echo "# 用户视角需求描述"; echo; cat /tmp/opencode/_uv.txt; } \
+                  > /tmp/opencode/requirement_analysis.md
+              fi
+              rm -f /tmp/opencode/_uv.txt
+              ;;
+          esac
+
+      - name: 多 agent 对抗实现循环（design → dev → deploy → review + tester）
+        id: orchestrate
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.BACKLOG_REPO_TOKEN || secrets.CROSS_REPO_TOKEN }}
+          KCFG_B64: ${{ secrets.AI_TEST_KUBECONFIG }}
+          OPENCODE_MODEL: ${{ vars.OPENCODE_MODEL || 'alibaba-cn/glm-5' }}
+          # 项目专有的额外凭据（按需删减；下面是 om-datacenter APIMagic per-PR 模式的例子）
+          # APIMAGIC_DB_PASSWORD: ${{ secrets.LOCAL_DB_PASSWORD }}
+          # APIMAGIC_DB_HOST:     ${{ vars.APIMAGIC_DB_HOST || 'postgresql' }}
+        run: bash src/orchestrate.sh
+
+      - name: 兜底回评
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.BACKLOG_REPO_TOKEN || secrets.CROSS_REPO_TOKEN || github.token }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --repo "$SOURCE_REPO" \
+            --body "❌ Workflow B 异常，详见 [run logs](https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})。" || true

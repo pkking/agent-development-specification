@@ -11,7 +11,7 @@
 | `docs/` | 项目内部文档（架构 / 编码覆盖 / 测试策略 / API / 部署 / 凭据清单）| ✓ |
 | `skills/` | 项目自定义 skill（AI agent 阶段 ① design 时路由用） | 可选 |
 | `prompts/` | 项目专属 prompt（菜单 + 流程 1/2/3 项目化定制）| ✓ |
-| `.github/workflows/` | caller workflow（dispatch 给通用层）+ PR 预览 caller | ✓ |
+| `.github/workflows/` | 6 个 workflow .tmpl（caller / pr-preview-caller / issue-1/2/3 / pr-deploy-preview），用法见 [`.github/workflows/README.md`](.github/workflows/README.md) | ✓ |
 | `.github/ISSUE_TEMPLATE/` | 项目 issue 模板 | 可选 |
 | `.preview/service.yaml.tmpl` | 预览部署服务定义（deployer 读这个起预览）| ✓（B 档必填，A 档可选）|
 | `k8s/` | K8s 资源 yaml（deployment / service / ingress / configmap） | ✓ |

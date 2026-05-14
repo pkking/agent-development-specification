@@ -100,6 +100,9 @@
 | [deployment.yaml](deployment.yaml) | K8s Deployment（含 kubeconfig volume mount） |
 | [rbac.yaml](rbac.yaml) | **ClusterRole** + ClusterRoleBinding |
 | [configmap.yaml](configmap.yaml) | 非敏感配置 |
+| [secret-example.yaml](secret-example.yaml) | Secret 字段示例（含 `k8s-deployer-secrets` + `deployer-kubeconfig` 两个 Secret） |
+
+> 关于 `entrypoint.sh` 里调用的 `./config.sh` 和 `./run.sh`：**不在本仓**，由 Dockerfile 下载 actions-runner tarball 并 `tar xzf` 到 `/home/deployer/actions-runner/` 提供（entrypoint 头部注释写了）。entrypoint 加了 preflight 检查 + kubectl 可用性校验。
 
 ## 升级 / 扩容 / 故障
 

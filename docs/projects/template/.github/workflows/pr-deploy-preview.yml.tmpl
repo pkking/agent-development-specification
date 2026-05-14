@@ -1,0 +1,100 @@
+# 旁支：人工提 PR 起预览（不走需求流）
+# 复制到项目 umbrella 仓的 .github/workflows/pr-deploy-preview.yml；按下方 << >> 占位符替换。
+#
+# 触发：项目 dev 仓 PR opened / synchronize / closed，由项目仓 caller workflow 通过
+#       repository_dispatch event_type=pr_deploy 转过来
+# Runner：k8s-deployer（注意不是 ai-dev-runner — 见 ../../../pipeline/generic-layer/runners.md §3.1）
+# 调 src/deployer/deploy.py 起预览 / 清理。PR 关闭时清理。
+#
+# 完整 spec：../../../pipeline/generic-layer/deployer.md
+
+name: PR Deploy Preview — <<PROJECT_DISPLAY_NAME>>
+
+on:
+  repository_dispatch:
+    types: [pr_deploy, pr_deploy_cleanup]
+
+concurrency:
+  group: pr-preview-${{ github.event.client_payload.pr_number }}-${{ github.event.client_payload.source_repo }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, k8s-deployer]
+    timeout-minutes: 15
+    env:
+      SOURCE_REPO:  ${{ github.event.client_payload.source_repo }}
+      PR_NUMBER:    ${{ github.event.client_payload.pr_number }}
+      PR_HEAD_SHA:  ${{ github.event.client_payload.sha }}
+      PR_ACTION:    ${{ github.event.client_payload.pr_action }}
+      PROJECT:      <<PROJECT_NAME>>
+      NAMESPACE:    <<NAMESPACE>>
+      BASE_DOMAIN:  <<BASE_DOMAIN>>
+      DEPLOY_MODE:  <<DEPLOY_MODE>>
+
+    steps:
+      - name: Checkout umbrella (含 src/deployer + templates)
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+          token: ${{ secrets.CROSS_REPO_TOKEN }}
+          fetch-depth: 1
+
+      - name: Decide service + image
+        id: meta
+        shell: bash
+        run: |
+          # 项目仓需要在 .preview/service.yaml 写明 service + image。也可以从 PR 注释 / labels 推。
+          SERVICE="${SOURCE_REPO##*/}"
+          # 镜像默认按 PR head sha 取（约定 build pipeline 推 <repo>:<sha> 到 registry）
+          IMAGE="<registry>/${SERVICE}:${PR_HEAD_SHA:0:12}"
+          {
+            echo "service=$SERVICE"
+            echo "image=$IMAGE"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Deploy (PR opened / synchronize)
+        if: github.event.action == 'pr_deploy'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.CROSS_REPO_TOKEN }}
+        run: |
+          python3 src/deployer/deploy.py \
+            --project   "$PROJECT" \
+            --service   "${{ steps.meta.outputs.service }}" \
+            --mode      "$DEPLOY_MODE" \
+            --image     "${{ steps.meta.outputs.image }}" \
+            --pr-number "$PR_NUMBER" \
+            --namespace "$NAMESPACE" \
+            --base-domain "$BASE_DOMAIN" \
+            > "/tmp/deploy-pr-${PR_NUMBER}.json"
+
+          PREVIEW_URL=$(python3 -c "import json; print(json.load(open('/tmp/deploy-pr-${PR_NUMBER}.json'))['preview_url'])")
+          gh pr comment "$PR_NUMBER" --repo "$SOURCE_REPO" \
+            --body "🔗 预览 URL → ${PREVIEW_URL}"
+
+      - name: Cleanup (PR closed)
+        if: github.event.action == 'pr_deploy_cleanup'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.CROSS_REPO_TOKEN }}
+        run: |
+          python3 src/deployer/deploy.py --cleanup \
+            --project   "$PROJECT" \
+            --service   "${{ steps.meta.outputs.service }}" \
+            --mode      "$DEPLOY_MODE" \
+            --image     "${{ steps.meta.outputs.image }}" \
+            --pr-number "$PR_NUMBER" \
+            --namespace "$NAMESPACE" || true
+
+      - name: 兜底回评
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.CROSS_REPO_TOKEN || github.token }}
+        run: |
+          gh pr comment "$PR_NUMBER" --repo "$SOURCE_REPO" \
+            --body "❌ 预览部署异常，详见 [run logs](https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})。" || true

@@ -1,0 +1,131 @@
+# Workflow C — 合入 + 上线 beta（流程 3）
+# 复制到项目 umbrella 仓的 .github/workflows/issue-3-merge-and-deploy.yml；按下方 << >> 占位符替换。
+#
+# 触发：评论 [<<TRIGGER_PREFIX>>需求上线]（可带 [DRY_RUN]），或跨仓 dispatch event_type=backlog_merge
+# 仅白名单用户能触发实际合入。上线 / 清理走 src/deployer/deploy.py，不在 yaml 里写 kubectl
+#
+# 完整 spec：../../../pipeline/stage-flow/flow-3-release.md
+# 部署器：../../../pipeline/generic-layer/deployer.md
+# 白名单规范：../../../pipeline/release-process.md
+
+name: 3️⃣ <<PROJECT_DISPLAY_NAME>> 合入 + 上线 beta
+
+on:
+  issue_comment:
+    types: [created]
+  repository_dispatch:
+    types: [backlog_merge]
+
+concurrency:
+  group: needs-merge-${{ github.event.issue.number || github.event.client_payload.issue_number }}-${{ github.event.client_payload.source_repo || github.repository }}
+  cancel-in-progress: false
+
+permissions:
+  issues: write
+  contents: write
+  pull-requests: write
+
+jobs:
+  merge-deploy:
+    if: |
+      github.event_name == 'repository_dispatch' ||
+      (github.event_name == 'issue_comment' &&
+        github.event.issue.state == 'open' &&
+        startsWith(github.event.comment.body, '[<<TRIGGER_PREFIX>>需求上线]'))
+    runs-on: [self-hosted, ai-dev-runner]
+    timeout-minutes: 25
+    env:
+      SOURCE_REPO:   ${{ github.event.client_payload.source_repo || github.repository }}
+      ISSUE_NUMBER:  ${{ github.event.client_payload.issue_number || github.event.issue.number }}
+      TRIGGER_USER:  ${{ github.event.client_payload.trigger_user || github.event.comment.user.login }}
+      DRY_RUN:       ${{ contains(github.event.comment.body, '[DRY_RUN]') || contains(github.event.client_payload.comment_body, '[DRY_RUN]') }}
+      # 白名单 — 空格分隔的 GitHub 用户名清单。生产里推荐放 GitHub Variables 而不是写死
+      MAINTAINER_WHITELIST: ${{ vars.MAINTAINER_WHITELIST || '<<MAINTAINER_WHITELIST>>' }}
+      NAMESPACE:     <<NAMESPACE>>
+      PROJECT:       <<PROJECT_NAME>>
+
+    steps:
+      - name: 0) Permission check (whitelist only)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.BACKLOG_REPO_TOKEN || secrets.CROSS_REPO_TOKEN || github.token }}
+        run: |
+          ok=false
+          for u in $MAINTAINER_WHITELIST; do [ "$u" = "$TRIGGER_USER" ] && ok=true && break; done
+          if [ "$ok" != "true" ]; then
+            gh issue comment "$ISSUE_NUMBER" --repo "$SOURCE_REPO" \
+              --body "🚫 **权限不足** — 仅白名单用户可触发合入上线（当前: \`$TRIGGER_USER\`；白名单: \`$MAINTAINER_WHITELIST\`）"
+            exit 1
+          fi
+
+      - name: 1) Checkout umbrella (含 src/deployer)
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+          token: ${{ secrets.CROSS_REPO_TOKEN }}
+          fetch-depth: 1
+
+      - name: 2) Compute branch + find related PRs (dev 仓从 .gitmodules 枚举)
+        id: find
+        shell: bash --noprofile --norc {0}
+        env:
+          GH_TOKEN: ${{ secrets.CROSS_REPO_TOKEN }}
+        run: |
+          SHORT="${SOURCE_REPO##*/}"
+          BRANCH="${SHORT}-issue-${ISSUE_NUMBER}"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          PRS=""
+          for url in $(git config -f .gitmodules --get-regexp 'submodule\..*\.url' 2>/dev/null | awk '{print $2}'); do
+            repo=$(echo "$url" | sed -E 's#^https?://github.com/##; s#\.git$##; s#/$##')
+            [ -z "$repo" ] && continue
+            j=$(gh pr list --repo "$repo" --head "$BRANCH" --state open --json number,url,mergeable -q '.[0]' 2>/dev/null || echo "")
+            [ -z "$j" ] || [ "$j" = "null" ] && continue
+            num=$(echo "$j" | python3 -c "import sys,json;print(json.load(sys.stdin).get('number',''))" 2>/dev/null)
+            url=$(echo "$j" | python3 -c "import sys,json;print(json.load(sys.stdin).get('url',''))" 2>/dev/null)
+            [ -z "$num" ] && continue
+            PRS="${PRS}${repo}|${num}|${url}"$'\n'
+          done
+          echo "prs<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$PRS"   >> "$GITHUB_OUTPUT"
+          echo "EOF"    >> "$GITHUB_OUTPUT"
+
+      - name: 3) 门禁 + 合 PR + promote + cleanup
+        if: env.DRY_RUN != 'true'
+        shell: bash
+        env:
+          GH_TOKEN:           ${{ secrets.BACKLOG_REPO_TOKEN || secrets.CROSS_REPO_TOKEN }}
+          KCFG_B64:           ${{ secrets.AI_TEST_KUBECONFIG }}
+          JENKINS_API_USER:   ${{ secrets.JENKINS_API_USER }}
+          JENKINS_API_TOKEN:  ${{ secrets.JENKINS_API_TOKEN }}
+        run: |
+          PRS="${{ steps.find.outputs.prs }}"
+          echo "$PRS" | while IFS='|' read -r repo num url; do
+            [ -z "$repo" ] && continue
+            echo "Merging $repo PR #$num ($url)"
+            gh pr merge "$num" --repo "$repo" --squash --delete-branch
+            echo "Promoting $repo to beta"
+            python3 src/deployer/deploy.py promote --env beta --service "$(basename "$repo")"
+            echo "Cleaning up preview for PR #$num"
+            python3 src/deployer/deploy.py --cleanup --project "$PROJECT" --service "$(basename "$repo")" \
+              --pr-number "$num" --namespace "$NAMESPACE" --mode dev-pod || true
+          done
+
+      - name: 3-DRY) DRY_RUN：仅打印不执行
+        if: env.DRY_RUN == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.BACKLOG_REPO_TOKEN || secrets.CROSS_REPO_TOKEN }}
+        run: |
+          echo "DRY_RUN — 不会真合 / 真上线 / 真清理。相关 PR："
+          echo "${{ steps.find.outputs.prs }}"
+
+      - name: 4) 回评 issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.BACKLOG_REPO_TOKEN || secrets.CROSS_REPO_TOKEN || github.token }}
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            gh issue comment "$ISSUE_NUMBER" --repo "$SOURCE_REPO" --body "🧪 DRY_RUN 完成，未执行真合入。查看 run 日志确认 PR 列表正确后，去掉 \`[DRY_RUN]\` 再评一次。"
+          else
+            gh issue comment "$ISSUE_NUMBER" --repo "$SOURCE_REPO" --body "✅ 合入 + 上线 beta 完成。详见 [run logs](https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})。"
+          fi

@@ -11,10 +11,17 @@
 
 完成上面 A 档 2 步基础上加：
 
-- [ ] 在项目仓加 `CLAUDE.md`（用 [`CLAUDE.md.tmpl`](CLAUDE.md.tmpl)，**逐字填占位符 + 项目铁规**）
-- [ ] 在项目仓加 `.github/workflows/caller-workflow.yml`（用 [`.github/workflows/caller-workflow.yml.tmpl`](.github/workflows/caller-workflow.yml.tmpl)，dispatch issue_comment 给通用层）
-- [ ] 在项目仓加 `skills/`（可选；用 [`skills/skill-name.md.tmpl`](skills/skill-name.md.tmpl) 写项目自定义 skill）
-- [ ] 在 docs/projects/`<your-project>`/prompts/ 填 4 个 prompt（trigger-menu / flow-1 / flow-2 / flow-3）
+- [ ] 在项目 umbrella 仓加 `CLAUDE.md`（用 [`CLAUDE.md.tmpl`](CLAUDE.md.tmpl)，**逐字填占位符 + 项目铁规**）
+- [ ] 在项目**来源仓**（如 backlog）加 `.github/workflows/caller-workflow.yml`（用 [`.github/workflows/caller-workflow.yml.tmpl`](.github/workflows/caller-workflow.yml.tmpl)，dispatch issue_comment 给通用层）
+- [ ] 在项目 umbrella 仓加 **3 个 workflow yml**（每个 .tmpl 都要替换占位符）：
+  - [ ] `.github/workflows/issue-1-analyze-requirement.yml`（用 [`.github/workflows/issue-1-analyze-requirement.yml.tmpl`](.github/workflows/issue-1-analyze-requirement.yml.tmpl)）
+  - [ ] `.github/workflows/issue-2-implement-and-preview.yml`（用 [`.github/workflows/issue-2-implement-and-preview.yml.tmpl`](.github/workflows/issue-2-implement-and-preview.yml.tmpl)）
+  - [ ] `.github/workflows/issue-3-merge-and-deploy.yml`（用 [`.github/workflows/issue-3-merge-and-deploy.yml.tmpl`](.github/workflows/issue-3-merge-and-deploy.yml.tmpl)）
+  - [ ] `.github/workflows/pr-deploy-preview.yml`（用 [`.github/workflows/pr-deploy-preview.yml.tmpl`](.github/workflows/pr-deploy-preview.yml.tmpl)；旁支 PR 预览）
+  - 3+1 个 yml 的拓扑和占位符索引：[`.github/workflows/README.md`](.github/workflows/README.md)
+- [ ] 在项目 umbrella 仓加 `.github/agents/`（含 requirements-doc / design / dev / review / tester 5 个 agent prompt，可拷 [`../om-datacenter/.github/agents/`](../om-datacenter/.github/agents/) 改）
+- [ ] 在项目 umbrella 仓加 `skills/`（可选；用 [`skills/skill-name.md.tmpl`](skills/skill-name.md.tmpl) 写项目自定义 skill）
+- [ ] 在 docs/projects/`<your-project>`/prompts/ 填 4 个项目层 prompt（trigger-menu / flow-1 / flow-2 / flow-3）
 - [ ] 在 docs/projects/`<your-project>`/docs/ 填 6 个项目文档（architecture / coding-overrides / test-strategy / api-spec / deployment / credentials-inventory）
 
 ## 验收（提交前最后跑一次）
