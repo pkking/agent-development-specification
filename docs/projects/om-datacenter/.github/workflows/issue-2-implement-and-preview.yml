@@ -1,7 +1,170 @@
-# 占位 — .github/workflows/issue-2-implement-and-preview.yml
+name: 2️⃣ 实现 + 预览（多 agent 对抗 → 改 dev 仓 → 开 PR → 起预览）
 
-> 本文件是 om-datacenter 项目实例的占位文件。
-> 实际内容将从 `opensourceways/om-datacenter` 仓对应文件拷贝改写到此。
->
-> 对应模板：[`../template/.github/workflows/issue-2-implement-and-preview.yml.tmpl`](../template/.github/workflows/issue-2-implement-and-preview.yml.tmpl) 或 [`../template/workflows/issue-2-implement-and-preview.yml.tmpl`](../template/workflows/issue-2-implement-and-preview.yml.tmpl)
-> 关联文档：[`../../pipeline/architecture.md`](../../pipeline/architecture.md)
+# 触发：评论 [数据中台需求实现]/[小数需求实现]，或跨仓 dispatch backlog_implement
+# 逻辑全在 src/orchestrate.sh + .github/agents/{dev,tester,gate}.md + CLAUDE.md「AI 自动开发流程」，
+# 本 yaml 只负责：算名字 → checkout + 5 个 dev submodule → 装 opencode → 拉 issue → 调脚本。
+on:
+  issue_comment:
+    types: [created]
+  repository_dispatch:
+    types: [backlog_implement]
+
+concurrency:
+  group: needs-implementation-${{ github.event.issue.number || github.event.client_payload.issue_number }}-${{ github.event.client_payload.source_repo || github.repository }}
+  cancel-in-progress: false
+
+permissions:
+  issues: write
+  contents: write
+  pull-requests: write
+
+jobs:
+  implement:
+    if: |
+      github.event_name == 'repository_dispatch' ||
+      (github.event_name == 'issue_comment' &&
+        github.event.issue.state == 'open' &&
+        (startsWith(github.event.comment.body, '[数据中台需求实现]') ||
+         startsWith(github.event.comment.body, '[小数需求实现]')))
+    runs-on: [self-hosted, ai-dev-runner]
+    timeout-minutes: 90
+    env:
+      HOME: /home/runner
+      SOURCE_REPO: ${{ github.event.client_payload.source_repo || github.repository }}
+      ISSUE_NUMBER: ${{ github.event.client_payload.issue_number || github.event.issue.number }}
+      ISSUE_TITLE: ${{ github.event.issue.title || github.event.client_payload.issue_title }}
+      MAX_FIX_ROUNDS: ${{ vars.GATE_FIX_ROUNDS || '3' }}
+      DOCS_REPO: ${{ vars.BACKLOG_DOCS_REPO || 'opensourceways/backlog' }}
+
+    steps:
+      - name: Pre-clean workspace
+        run: |
+          rm -rf "$GITHUB_WORKSPACE"/* 2>/dev/null || true
+          mkdir -p "$GITHUB_WORKSPACE"
+
+      - name: Compute names (BRANCH = <source-repo 短名>-issue-<N>)
+        shell: bash
+        run: |
+          SHORT="${SOURCE_REPO##*/}"            # opensourceways/backlog -> backlog
+          HANDLING="${GITHUB_REPOSITORY##*/}"   # 处理这个需求的项目仓名（这里 = om-datacenter）
+          echo "SOURCE_REPO_SHORT=$SHORT"               >> "$GITHUB_ENV"
+          echo "HANDLING_REPO=$HANDLING"                >> "$GITHUB_ENV"
+          echo "BRANCH=${SHORT}-issue-${ISSUE_NUMBER}"  >> "$GITHUB_ENV"
+          echo "WS_NAME=${SHORT}-issue-${ISSUE_NUMBER}" >> "$GITHUB_ENV"
+          echo "  HANDLING_REPO=$HANDLING  BRANCH=${SHORT}-issue-${ISSUE_NUMBER}"
+
+      - name: Checkout umbrella (no auto-submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+          token: ${{ secrets.CROSS_REPO_TOKEN }}
+          fetch-depth: 0
+
+      - name: Init dev submodules with admin token (从 .gitmodules 枚举；单仓失败不致命，dev agent 会跳过)
+        shell: bash --noprofile --norc {0}
+        env:
+          GH_TOKEN: ${{ secrets.BACKLOG_REPO_TOKEN || secrets.CROSS_REPO_TOKEN }}
+        run: |
+          # dev 仓列表不写死——直接从 .gitmodules 读（任何 umbrella-of-submodules 项目都适用）
+          SUBS="$(git config -f .gitmodules --get-regexp 'submodule\..*\.path' 2>/dev/null | awk '{print $2}')"
+          echo "  submodules from .gitmodules:" $SUBS
+          git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/" || true
+          ok=""; bad=""
+          for d in $SUBS; do
+            if git submodule update --init -- "$d" >/dev/null 2>&1 && [ -e "$d/.git" ]; then
+              ok="$ok $d"; echo "  ✓ $d"
+            else
+              bad="$bad $d"; echo "::warning::submodule $d 拉取失败（仓不存在 / token 无权限），dev agent 会跳过该仓"
+            fi
+          done
+          git config --global --unset-all url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf || true
+          echo "  initialized:${ok:- (none)}"
+          [ -n "$bad" ] && echo "  skipped:$bad" || true
+          [ -z "$ok" ] && { echo "::error::所有 dev 子仓都没拉下来，检查 .gitmodules / BACKLOG_REPO_TOKEN 权限"; exit 1; } || true
+
+      - name: Configure git (注入 token，让 git push 自动带凭据)
+        shell: bash --noprofile --norc {0}
+        env:
+          GH_TOKEN: ${{ secrets.BACKLOG_REPO_TOKEN || secrets.CROSS_REPO_TOKEN }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          SUBS="$(git config -f .gitmodules --get-regexp 'submodule\..*\.path' 2>/dev/null | awk '{print $2}')"
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          for d in $SUBS; do git config --global --add safe.directory "$GITHUB_WORKSPACE/$d"; done
+          git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
+
+      - name: Setup opencode env (per-issue workspace under /workspaces/<handling-repo>/<issue>)
+        shell: bash
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        run: |
+          # 通用 runner 镜像不 bake 任何项目代码；per-issue 工作空间放 PVC，按 <处理仓>/<issue> 分目录，互不影响
+          WS=/workspaces/${HANDLING_REPO}/${WS_NAME}
+          mkdir -p "$WS" /tmp/opencode "$HOME/.local/share/opencode/log" "$HOME/.config/opencode"
+          printf '{"alibaba-cn":{"type":"api","key":"%s"}}\n' "$OPENCODE_API_KEY" > "$HOME/.local/share/opencode/auth.json"
+          chmod 600 "$HOME/.local/share/opencode/auth.json"
+          printf '{"$schema":"https://opencode.ai/config.json"}\n' > "$HOME/.config/opencode/opencode.json"
+          echo "WORKSPACE_DIR=$WS" >> "$GITHUB_ENV"
+
+      - name: Fetch issue + comments (含 USER_VIEW)
+        uses: ./.github/actions/fetch-issue
+        with:
+          issue-number: ${{ env.ISSUE_NUMBER }}
+          source-repo: ${{ env.SOURCE_REPO }}
+          github-token: ${{ secrets.BACKLOG_REPO_TOKEN || secrets.CROSS_REPO_TOKEN || github.token }}
+
+      - name: 准备需求文档（→ /tmp/opencode/requirement_analysis.md；按 issue 标题分两种来源）
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.BACKLOG_REPO_TOKEN || secrets.CROSS_REPO_TOKEN || github.token }}
+        run: |
+          # [需求] 类 → Workflow A 写了 backlog 需求分析说明书 PR，必须已合入，从 backlog 仓拉；
+          # [任务]/[缺陷]/无关键字 → Workflow A 没写 backlog 文档，只在 issue 回了「用户视角需求描述」评论（含 <!-- USER_VIEW_DOC --> 锚点），
+          #   把那段从 fetch-issue 写的 /tmp/opencode/issue.txt 里抠出来当需求文档 —— 这样 design/dev/tester 在同一个路径就能拿到「需求」，不再误报「找不到」。
+          rm -f /tmp/opencode/requirement_analysis.md
+          case "$ISSUE_TITLE" in
+            *"[需求]"*)
+              RA_PATH="opensourceways/${SOURCE_REPO_SHORT}/issue_docs/${ISSUE_NUMBER}/Requirement%20Analysis/%23${ISSUE_NUMBER}%20Requirement%20Analysis%20Specification.md"
+              if gh api "repos/${DOCS_REPO}/contents/${RA_PATH}" -q '.content' 2>/dev/null | base64 -d > /tmp/opencode/requirement_analysis.md 2>/dev/null && [ -s /tmp/opencode/requirement_analysis.md ]; then
+                echo "  ✓ [需求] 类：从 ${DOCS_REPO} 拉到已合入的需求分析说明书 → /tmp/opencode/requirement_analysis.md（$(wc -l < /tmp/opencode/requirement_analysis.md) 行）"
+              else
+                rm -f /tmp/opencode/requirement_analysis.md
+                echo "::error::[需求] 类 issue，但 ${DOCS_REPO} 的需求分析说明书取不到（${RA_PATH}）—— 多半是那个文档 PR 还没评审合入。请先去 backlog 仓合入 PR，再评 [小数需求实现] 重跑；这一轮 agent 先退回用 issue 内容。"
+              fi
+              ;;
+            *)
+              # 从 issue.txt 抠出 <!-- USER_VIEW_DOC --> 到下一行 `---` 之间的「用户视角需求描述」
+              awk '/<!--[[:space:]]*USER_VIEW_DOC[[:space:]]*-->/{f=1;next} f&&/^---$/{exit} f{print}' /tmp/opencode/issue.txt > /tmp/opencode/_uv.txt 2>/dev/null || true
+              if [ -s /tmp/opencode/_uv.txt ] && grep -q '[^[:space:]]' /tmp/opencode/_uv.txt; then
+                { echo "# 用户视角需求描述（Workflow A 回评 —— [任务]/[缺陷]/无关键字 类，未写 backlog 文档）"; echo; cat /tmp/opencode/_uv.txt; } > /tmp/opencode/requirement_analysis.md
+                echo "  ✓ [任务]/[缺陷]/无关键字 类：用 Workflow A 回评的「用户视角需求描述」当需求文档 → /tmp/opencode/requirement_analysis.md"
+              else
+                echo "  ℹ️ 本 issue 非 [需求] 类、又没找到 <!-- USER_VIEW_DOC --> 评论——agent 直接按 issue 内容（/tmp/opencode/issue.txt，含标题/正文/全部评论）实现，这是正常的，不是错误。"
+              fi
+              rm -f /tmp/opencode/_uv.txt
+              ;;
+          esac
+
+      - name: 多 agent 对抗实现循环（dev → deploy → tester → gate，最多 N 轮）
+        id: orchestrate
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.BACKLOG_REPO_TOKEN || secrets.CROSS_REPO_TOKEN }}
+          # runner 在 k8s 里时 orchestrate.sh 走 in-cluster config（pod SA）；不在 k8s 里则用这个 base64 kubeconfig
+          KCFG_B64: ${{ secrets.AI_TEST_KUBECONFIG }}
+          OPENCODE_MODEL: alibaba-cn/glm-5
+          # APIMagic per-PR 模式（注册表 registry/APIMagic.yaml mode=apimagic）建 magic_api_file_v2_pr<N> 表用的 ai-test PG 密码；
+          # 没配就自动退回共享 backend-01（PR 改的 .ms 在预览里看不到，回评里会说明）。runner 在 ai-test 内可直连 service `postgresql`。
+          APIMAGIC_DB_PASSWORD: ${{ secrets.LOCAL_DB_PASSWORD }}
+          ADC_PG_PWD: ${{ secrets.LOCAL_DB_PASSWORD }}
+          APIMAGIC_DB_HOST: ${{ vars.APIMAGIC_DB_HOST || 'postgresql' }}
+        run: bash src/orchestrate.sh
+
+      - name: 兜底回评（脚本异常时也给用户一个信号）
+        if: failure()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.BACKLOG_REPO_TOKEN || secrets.CROSS_REPO_TOKEN || github.token }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --repo "$SOURCE_REPO" --body "❌ Workflow B 执行异常（orchestrate.sh 半路挂了），详见 [run logs](https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})。可补充 issue 后重新评论 \`[小数需求实现]\` 重试。" || true

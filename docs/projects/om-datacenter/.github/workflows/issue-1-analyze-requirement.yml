@@ -1,7 +1,206 @@
-# 占位 — .github/workflows/issue-1-analyze-requirement.yml
+name: 1️⃣ 需求分析 ([需求]→Backlog 需求分析说明书 PR / [任务][缺陷]/无关键字→用户视角评论)
 
-> 本文件是 om-datacenter 项目实例的占位文件。
-> 实际内容将从 `opensourceways/om-datacenter` 仓对应文件拷贝改写到此。
->
-> 对应模板：[`../template/.github/workflows/issue-1-analyze-requirement.yml.tmpl`](../template/.github/workflows/issue-1-analyze-requirement.yml.tmpl) 或 [`../template/workflows/issue-1-analyze-requirement.yml.tmpl`](../template/workflows/issue-1-analyze-requirement.yml.tmpl)
-> 关联文档：[`../../pipeline/architecture.md`](../../pipeline/architecture.md)
+# 触发：issue 评论含 [数据中台需求分析] / [小数需求分析]，
+# 或跨仓 dispatch event_type=backlog_analyze（client_payload 来自来源仓的 forward workflow）。
+#
+# 按 issue **标题**分两种处理：
+#   A) 标题含 [需求] → "ra-doc" 模式：按 backlog 仓规范
+#      （templates/Requirement Analysis/#1 ...md + AGENTS.md + .claude/commands/ai-design.md「阶段 A」）
+#      写一份《需求分析说明书》→ 提 PR 到 backlog 仓（分支 issue-<N>-design-docs，base main，
+#      路径 opensourceways/<repo>/issue_docs/<N>/Requirement Analysis/）→ 回评 issue 贴 PR 链接，**等人评审合入**。
+#   B) 标题含 [任务] / [缺陷]，或不含上述任何关键字 → "user-view" 模式：不写 backlog 文档，只在 issue 里回一段
+#      极简的「用户视角需求描述」（含 <!-- USER_VIEW_DOC --> 锚点，供 Workflow B 的 design agent / 门禁用）。
+# 两种都**不自动级联**触发实现 —— 由人评论 [小数需求实现] 进入 Workflow B。
+on:
+  issue_comment:
+    types: [created]
+  repository_dispatch:
+    types: [backlog_analyze]
+
+concurrency:
+  group: needs-analysis-${{ github.event.issue.number || github.event.client_payload.issue_number }}-${{ github.event.client_payload.source_repo || github.repository }}
+  cancel-in-progress: false
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  analyze:
+    if: |
+      github.event_name == 'repository_dispatch' ||
+      (github.event_name == 'issue_comment' &&
+        github.event.issue.state == 'open' &&
+        (startsWith(github.event.comment.body, '[数据中台需求分析]') ||
+         startsWith(github.event.comment.body, '[小数需求分析]')))
+    runs-on: [self-hosted, ai-dev-runner]
+    timeout-minutes: 20
+    env:
+      HOME: /home/runner
+      SOURCE_REPO: ${{ github.event.client_payload.source_repo || github.repository }}
+      ISSUE_NUMBER: ${{ github.event.client_payload.issue_number || github.event.issue.number }}
+      ISSUE_TITLE: ${{ github.event.issue.title || github.event.client_payload.issue_title }}
+      DOCS_REPO: ${{ vars.BACKLOG_DOCS_REPO || 'opensourceways/backlog' }}
+      OPENCODE_MODEL: alibaba-cn/glm-5
+
+    steps:
+      - name: Checkout om-datacenter (tools — agent 角色 + composite actions；不要 submodule)
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+          token: ${{ secrets.CROSS_REPO_TOKEN }}
+          fetch-depth: 1
+
+      - name: Decide A_MODE (按 issue 标题) + compute names
+        shell: bash
+        run: |
+          # 标题含 [需求] → ra-doc（写 backlog 需求分析说明书 PR）；否则（含 [任务]/[缺陷]，或无关键字）→ user-view（只回用户视角评论）
+          case "$ISSUE_TITLE" in
+            *"[需求]"*) A_MODE=ra-doc ;;
+            *)          A_MODE=user-view ;;
+          esac
+          echo "A_MODE=$A_MODE" >> "$GITHUB_ENV"
+          SHORT="${SOURCE_REPO##*/}"
+          echo "SOURCE_REPO_SHORT=$SHORT"                                  >> "$GITHUB_ENV"
+          echo "DOCS_BRANCH=issue-${ISSUE_NUMBER}-design-docs"             >> "$GITHUB_ENV"
+          echo "DOCS_DIR=opensourceways/${SHORT}/issue_docs/${ISSUE_NUMBER}" >> "$GITHUB_ENV"
+          echo "  ISSUE_TITLE=[$ISSUE_TITLE]  -> A_MODE=$A_MODE  (DOCS_REPO=$DOCS_REPO)"
+
+      - name: Setup opencode env
+        uses: ./.github/actions/setup
+        with:
+          opencode-api-key: ${{ secrets.OPENCODE_API_KEY }}
+
+      # ─────────────────── ra-doc 模式 ───────────────────
+      - name: Clone Backlog docs repo (需求分析说明书提到这里)
+        if: env.A_MODE == 'ra-doc'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.BACKLOG_REPO_TOKEN || secrets.CROSS_REPO_TOKEN }}
+        run: |
+          rm -rf "$GITHUB_WORKSPACE/backlog" 2>/dev/null || true
+          # token 写进 origin URL（本地 .git/config，不入仓；Actions 自动 mask 该 secret）
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/${DOCS_REPO}.git" "$GITHUB_WORKSPACE/backlog"
+          cd "$GITHUB_WORKSPACE/backlog"
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git fetch origin "${DOCS_BRANCH}" 2>/dev/null; then
+            git checkout -B "${DOCS_BRANCH}" FETCH_HEAD
+          else
+            git checkout -b "${DOCS_BRANCH}"
+          fi
+
+      - name: Fetch issue + comments (→ /tmp/opencode/issue.txt)
+        uses: ./.github/actions/fetch-issue
+        with:
+          issue-number: ${{ env.ISSUE_NUMBER }}
+          source-repo: ${{ env.SOURCE_REPO }}
+          github-token: ${{ secrets.BACKLOG_REPO_TOKEN || secrets.CROSS_REPO_TOKEN || github.token }}
+
+      - name: 写 Backlog 需求分析说明书（opencode + .github/agents/requirements-doc.md）
+        if: env.A_MODE == 'ra-doc'
+        shell: bash
+        run: |
+          ROLE="$(cat "$GITHUB_WORKSPACE/.github/agents/requirements-doc.md")"
+          ISSUE_CONTENT="$(cat /tmp/opencode/issue.txt 2>/dev/null || echo '')"
+          PROMPT="${ROLE}
+
+          ================ 本次任务 ================
+          SOURCE_REPO=${SOURCE_REPO}  ISSUE_NUMBER=${ISSUE_NUMBER}
+          目标文件：${DOCS_DIR}/Requirement Analysis/#${ISSUE_NUMBER} Requirement Analysis Specification.md
+          （同时建空目录 ${DOCS_DIR}/Docs/ 并放一个 .gitkeep）
+          当前工作目录就是 backlog 仓的 checkout —— templates/、AGENTS.md、README.md、context/ 都在这里，先读它们再动手。
+
+          issue 内容（标题 + 正文 + 全部评论，含触发评论里用户写的补充意见）：
+          ${ISSUE_CONTENT}
+          "
+          cd "$GITHUB_WORKSPACE/backlog"
+          opencode run "$PROMPT" --model "$OPENCODE_MODEL" --agent build --dangerously-skip-permissions --thinking=false || true
+
+      - name: Commit + push docs 分支 + 开 PR (到 backlog)
+        if: env.A_MODE == 'ra-doc'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.BACKLOG_REPO_TOKEN || secrets.CROSS_REPO_TOKEN }}
+        run: |
+          cd "$GITHUB_WORKSPACE/backlog"
+          git add -- "${DOCS_DIR}" 2>/dev/null || true   # 只收目标目录，防 agent 误改 templates/ context/ 等
+          git commit -m "需求分析: ${SOURCE_REPO}#${ISSUE_NUMBER} 需求分析说明书" || echo "::notice::无新改动可提交（重跑产出相同？），继续"
+          if ! git ls-tree -r --name-only HEAD -- "${DOCS_DIR}/Requirement Analysis" | grep -q .; then
+            echo "::error::需求分析说明书未生成（${DOCS_DIR}/Requirement Analysis/ 下没文件），opencode 输出可能为空"
+            exit 1
+          fi
+          git push -u origin "${DOCS_BRANCH}"
+          PR_URL="$(gh pr list --repo "$DOCS_REPO" --head "$DOCS_BRANCH" --state open --json url -q '.[0].url' 2>/dev/null || true)"
+          if [ -z "$PR_URL" ] || [ "$PR_URL" = "null" ]; then
+            PR_BODY="$(printf '自动生成的需求分析说明书。\n\n来源 issue: %s#%s — https://github.com/%s/issues/%s\n路径: `%s/Requirement Analysis/`\n\n评审 / 补充后**合入本 PR**；合入后在该 issue 评论 `[小数需求实现]` 进入多 agent 对抗开发。' "$SOURCE_REPO" "$ISSUE_NUMBER" "$SOURCE_REPO" "$ISSUE_NUMBER" "$DOCS_DIR")"
+            PR_URL="$(gh pr create --repo "$DOCS_REPO" --base main --head "$DOCS_BRANCH" --title "需求分析: ${SOURCE_REPO}#${ISSUE_NUMBER}" --body "$PR_BODY")"
+          fi
+          echo "PR_URL=$PR_URL" >> "$GITHUB_ENV"
+          echo "  PR_URL=$PR_URL"
+
+      - name: 回评 issue（ra-doc：PR 链接 + 下一步）
+        if: env.A_MODE == 'ra-doc'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.BACKLOG_REPO_TOKEN || secrets.CROSS_REPO_TOKEN || github.token }}
+        run: |
+          {
+            echo '<!-- USER_VIEW_DOC -->'
+            echo '## 📋 需求分析说明书已生成 (Workflow A)'
+            echo ''
+            echo "- 文档 PR：${PR_URL}"
+            echo "- 在 \`${DOCS_REPO}\` 的 \`${DOCS_DIR}/Requirement Analysis/#${ISSUE_NUMBER} Requirement Analysis Specification.md\`"
+            echo "- 请评审 / 补充后**合入该 PR**。合入后在本 issue 评论 \`[小数需求实现]\` 进入多 agent 对抗开发（design → dev → 预览 → review → tester）。"
+            echo "- 想让 AI 重写需求分析：评论 \`[小数需求分析] 你的补充意见\`（会覆盖刷新该分支上的文档）。"
+          } > /tmp/body.txt
+          gh issue comment "$ISSUE_NUMBER" --repo "$SOURCE_REPO" --body-file /tmp/body.txt
+
+      # ─────────────────── user-view 模式（[任务]/[缺陷] 或无关键字）───────────────────
+      - name: 写极简用户视角描述（opencode；[任务]/[缺陷]/无关键字 不写 backlog 文档）
+        if: env.A_MODE == 'user-view'
+        shell: bash
+        run: |
+          ISSUE_CONTENT="$(cat /tmp/opencode/issue.txt 2>/dev/null || echo '')"
+          PROMPT="你是产品经理。基于下面这个 issue（[任务]/[缺陷] 类，或标题不带关键字），写一段**极简**的用户视角描述，让用户能直接进入实现阶段。
+
+          要求（务必遵守，否则会被判失败）：
+          1. **只写一段，3-8 行**，不要长篇大论，不写设计方案、不写代码、不提技术栈
+          2. 内容只包含：改动位置（1 句话：页面/模块/元素）、改动前后（用 \`A → B\` 对比格式）、影响范围（1 句话：哪些社区/用户）
+          3. 缺陷类要写清「现象 → 期望」；任务/其它类写清「要做的事 + 完成标志」
+          4. **不要问鸡毛蒜皮的确认项**（全/半角括号、大小写、间距等）；issue 已写明的按字面执行
+          5. 写到 /tmp/opencode/user_view.md（不要重复标题）
+
+          issue 内容（标题 + 正文 + 全部评论，含触发评论里用户写的补充意见）：
+          ${ISSUE_CONTENT}
+          "
+          opencode run "$PROMPT" --model "$OPENCODE_MODEL" --agent build --dangerously-skip-permissions --thinking=false || true
+
+      - name: 回评 issue（user-view：用户视角描述 + 下一步）
+        if: env.A_MODE == 'user-view'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.BACKLOG_REPO_TOKEN || secrets.CROSS_REPO_TOKEN || github.token }}
+        run: |
+          if [ -s /tmp/opencode/user_view.md ]; then
+            {
+              echo '<!-- USER_VIEW_DOC -->'
+              echo '## 📋 需求分析 (Workflow A —— [任务]/[缺陷] 或无关键字，只回用户视角描述，不写 backlog 需求文档)'
+              echo ''
+              cat /tmp/opencode/user_view.md
+              echo ''
+              echo '---'
+              echo '下一步：评论 `[小数需求实现]` 进入多 agent 对抗开发（无需评审合入文档 PR——非 [需求] 类不写需求分析说明书；要走 backlog 需求文档评审流程，请在标题加 `[需求]` 后重评 `[小数需求分析]`）。要调整上面的描述：评论 `[小数需求分析] 你的补充意见` 重跑。'
+            } > /tmp/body.txt
+            gh issue comment "$ISSUE_NUMBER" --repo "$SOURCE_REPO" --body-file /tmp/body.txt
+          else
+            gh issue comment "$ISSUE_NUMBER" --repo "$SOURCE_REPO" --body "⚠️ Workflow A 未能生成用户视角描述（opencode 输出为空），请补充 issue 内容后再评论 \`[小数需求分析]\` 重试。"
+          fi
+
+      - name: 兜底回评（脚本异常时也给用户一个信号）
+        if: failure()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.BACKLOG_REPO_TOKEN || secrets.CROSS_REPO_TOKEN || github.token }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --repo "$SOURCE_REPO" --body "❌ Workflow A（需求分析）执行异常，详见 [run logs](https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})。补充 issue 内容后重新评论 \`[小数需求分析]\` 重试。" || true

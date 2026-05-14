@@ -1,7 +1,186 @@
-# 占位 — .github/workflows/issue-3-merge-and-deploy.yml
+name: 3️⃣ 合入 + 上线 beta（门禁 → merge PR → deployer promote）
 
-> 本文件是 om-datacenter 项目实例的占位文件。
-> 实际内容将从 `opensourceways/om-datacenter` 仓对应文件拷贝改写到此。
->
-> 对应模板：[`../template/.github/workflows/issue-3-merge-and-deploy.yml.tmpl`](../template/.github/workflows/issue-3-merge-and-deploy.yml.tmpl) 或 [`../template/workflows/issue-3-merge-and-deploy.yml.tmpl`](../template/workflows/issue-3-merge-and-deploy.yml.tmpl)
-> 关联文档：[`../../pipeline/architecture.md`](../../pipeline/architecture.md)
+# 触发：评论 [小数需求上线] / [小数合入上线] / [数据中台合入上线]（可带 [DRY_RUN]），或跨仓 dispatch backlog_merge
+# 仅白名单用户能触发实际合入。上线/清理统一走 src/deployer/deploy.py（不在 yaml 里写 kubectl）。
+on:
+  issue_comment:
+    types: [created]
+  repository_dispatch:
+    types: [backlog_merge]
+
+concurrency:
+  group: needs-merge-${{ github.event.issue.number || github.event.client_payload.issue_number }}-${{ github.event.client_payload.source_repo || github.repository }}
+  cancel-in-progress: false
+
+permissions:
+  issues: write
+  contents: write
+  pull-requests: write
+
+jobs:
+  merge-deploy:
+    if: |
+      github.event_name == 'repository_dispatch' ||
+      (github.event_name == 'issue_comment' &&
+        github.event.issue.state == 'open' &&
+        (startsWith(github.event.comment.body, '[小数需求上线]') ||
+         startsWith(github.event.comment.body, '[小数合入上线]') ||
+         startsWith(github.event.comment.body, '[数据中台合入上线]')))
+    runs-on: [self-hosted, ai-dev-runner]
+    timeout-minutes: 25
+    env:
+      SOURCE_REPO: ${{ github.event.client_payload.source_repo || github.repository }}
+      ISSUE_NUMBER: ${{ github.event.client_payload.issue_number || github.event.issue.number }}
+      TRIGGER_USER: ${{ github.event.client_payload.trigger_user || github.event.comment.user.login }}
+      DRY_RUN: ${{ contains(github.event.comment.body, '[DRY_RUN]') || contains(github.event.client_payload.comment_body, '[DRY_RUN]') }}
+
+    steps:
+      - name: 0) Permission check (whitelist only)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.BACKLOG_REPO_TOKEN || secrets.CROSS_REPO_TOKEN || github.token }}
+        run: |
+          ALLOW="flysky22222 zhongjun2"
+          ok=false
+          for u in $ALLOW; do [ "$u" = "$TRIGGER_USER" ] && ok=true && break; done
+          if [ "$ok" != "true" ]; then
+            gh issue comment "$ISSUE_NUMBER" --repo "$SOURCE_REPO" --body "🚫 **权限不足** — 仅 \`flysky22222\` / \`zhongjun2\` 可触发合入上线（当前: \`$TRIGGER_USER\`）"
+            exit 1
+          fi
+          echo "✓ user=$TRIGGER_USER allowed"
+
+      - name: 1) Checkout umbrella (含 src/deployer)
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+          token: ${{ secrets.CROSS_REPO_TOKEN }}
+          fetch-depth: 1
+
+      - name: 2) Compute branch + find related PRs (dev 仓从 .gitmodules 枚举)
+        id: find
+        shell: bash --noprofile --norc {0}
+        env:
+          GH_TOKEN: ${{ secrets.CROSS_REPO_TOKEN }}
+        run: |
+          SHORT="${SOURCE_REPO##*/}"
+          BRANCH="${SHORT}-issue-${ISSUE_NUMBER}"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "  BRANCH=$BRANCH"
+          PRS=""
+          # 不写死 5 个仓——从 .gitmodules 的每个 submodule.<name>.url 里抽 owner/repo
+          for url in $(git config -f .gitmodules --get-regexp 'submodule\..*\.url' 2>/dev/null | awk '{print $2}'); do
+            repo=$(echo "$url" | sed -E 's#^https?://github.com/##; s#\.git$##; s#/$##')
+            [ -z "$repo" ] && continue
+            j=$(gh pr list --repo "$repo" --head "$BRANCH" --state open --json number,url,mergeable -q '.[0]' 2>/dev/null || echo "")
+            [ -z "$j" ] || [ "$j" = "null" ] && continue
+            num=$(echo "$j" | python3 -c "import sys,json;print(json.load(sys.stdin).get('number',''))" 2>/dev/null)
+            merg=$(echo "$j" | python3 -c "import sys,json;print(json.load(sys.stdin).get('mergeable',''))" 2>/dev/null)
+            url=$(echo "$j" | python3 -c "import sys,json;print(json.load(sys.stdin).get('url',''))" 2>/dev/null)
+            [ -z "$num" ] && continue
+            PRS="${PRS}${repo}|${num}|${merg}|${url}"$'\n'
+            echo "  found $repo PR #$num mergeable=$merg"
+          done
+          echo "prs_b64=$(echo -n "$PRS" | base64 -w 0)" >> "$GITHUB_OUTPUT"
+          [ -z "$PRS" ] && echo "::warning::没找到 head=$BRANCH 的 PR"
+
+      - name: 3) Gate (mergeable / 冲突)
+        id: gate
+        shell: bash --noprofile --norc {0}
+        env:
+          PRS_B64: ${{ steps.find.outputs.prs_b64 }}
+        run: |
+          ok=true
+          if [ -n "$PRS_B64" ]; then
+            while IFS='|' read -r repo num merg url; do
+              [ -z "$repo" ] && continue
+              echo "→ $repo #$num mergeable=$merg"
+              if [ "$merg" = "CONFLICTING" ]; then echo "  ❌ conflict"; ok=false; fi
+            done <<< "$(echo "$PRS_B64" | base64 -d)"
+          fi
+          echo "all_pass=$ok" >> "$GITHUB_OUTPUT"
+
+      - name: 4) Sync maintainer comments to PRs
+        if: steps.gate.outputs.all_pass == 'true'
+        shell: bash --noprofile --norc {0}
+        env:
+          GH_TOKEN: ${{ secrets.CROSS_REPO_TOKEN }}
+          PRS_B64: ${{ steps.find.outputs.prs_b64 }}
+        run: |
+          C=$(gh issue view "$ISSUE_NUMBER" --repo "$SOURCE_REPO" --json comments -q '.comments[] | select(.authorAssociation=="OWNER" or .authorAssociation=="MEMBER" or .authorAssociation=="COLLABORATOR") | "\(.author.login)|\(.body)"' 2>/dev/null || echo "")
+          [ -z "$C" ] && { echo "no maintainer comments"; exit 0; }
+          SYNC="### 来自 issue #${ISSUE_NUMBER} (${SOURCE_REPO}) 的 maintainer 评论同步"$'\n\n'
+          while IFS='|' read -r who body; do [ -z "$who" ] && continue; SYNC+="**@$who**: ${body:0:200}"$'\n\n'; done <<< "$C"
+          [ -z "$PRS_B64" ] && exit 0
+          while IFS='|' read -r repo num merg url; do
+            [ -z "$url" ] && continue
+            echo "$SYNC" | gh pr comment "$url" --body-file - 2>&1 | tail -2 || true
+          done <<< "$(echo "$PRS_B64" | base64 -d)"
+
+      - name: 5) Merge PRs (skip if DRY_RUN)
+        if: steps.gate.outputs.all_pass == 'true' && env.DRY_RUN != 'true'
+        shell: bash --noprofile --norc {0}
+        env:
+          GH_TOKEN: ${{ secrets.CROSS_REPO_TOKEN }}
+          PRS_B64: ${{ steps.find.outputs.prs_b64 }}
+        run: |
+          [ -z "$PRS_B64" ] && exit 0
+          while IFS='|' read -r repo num merg url; do
+            [ -z "$url" ] && continue
+            echo "→ merge $url"
+            gh pr merge "$url" --squash --delete-branch 2>&1 | tail -3 || true
+          done <<< "$(echo "$PRS_B64" | base64 -d)"
+
+      - name: 6) Promote + cleanup（deployer，按 PR 所在仓）
+        if: steps.gate.outputs.all_pass == 'true' && env.DRY_RUN != 'true'
+        shell: bash --noprofile --norc {0}
+        env:
+          GH_TOKEN: ${{ secrets.CROSS_REPO_TOKEN }}
+          KCFG_B64: ${{ secrets.AI_TEST_KUBECONFIG }}
+          PRS_B64: ${{ steps.find.outputs.prs_b64 }}
+          # APIMagic promote 时把已合入 PR 的 .ms 同步进生产 magic_api_file_v2 + DROP 掉 per-PR 表，要 ai-test PG 密码；
+          # 没配则只 rollout backend-01，回评里会提示需手动 make insert。设 APIMAGIC_PROMOTE_SYNC=0 可关掉自动同步。
+          APIMAGIC_DB_PASSWORD: ${{ secrets.LOCAL_DB_PASSWORD }}
+          ADC_PG_PWD: ${{ secrets.LOCAL_DB_PASSWORD }}
+          APIMAGIC_DB_HOST: ${{ vars.APIMAGIC_DB_HOST || 'postgresql' }}
+          # 前端（datastat）promote 时除了 rollout，还会触发它注册表里的 Jenkins job 用基础分支(beta)构建+部署上线环境（见 registry/datastat-manage-website.yaml 的 jenkins_*）
+          JENKINS_API_USER: ${{ secrets.JENKINS_API_USER }}
+          JENKINS_API_TOKEN: ${{ secrets.JENKINS_API_TOKEN }}
+        run: |
+          if [ -f /var/run/secrets/kubernetes.io/serviceaccount/token ]; then
+            unset KUBECONFIG   # runner 在 k8s 里：用 in-cluster config (pod SA)
+          else
+            echo "$KCFG_B64" | base64 -d > /tmp/kubeconfig && export KUBECONFIG=/tmp/kubeconfig
+          fi
+          if [ -n "$PRS_B64" ]; then
+            while IFS='|' read -r repo num merg url; do
+              [ -z "$repo" ] && continue
+              echo "→ promote $repo #$num (beta)"
+              python3 src/deployer/deploy.py promote --repo "$repo" --pr "$num" --env beta || echo "::warning::promote $repo 失败"
+              echo "→ cleanup $repo #$num 预览"
+              python3 src/deployer/deploy.py cleanup --repo "$repo" --pr "$num" || echo "::warning::cleanup $repo#$num 失败"
+            done <<< "$(echo "$PRS_B64" | base64 -d)"
+          fi
+          rm -f /tmp/kubeconfig
+
+      - name: 7) Comment final result
+        if: always()
+        shell: bash --noprofile --norc {0}
+        env:
+          GH_TOKEN: ${{ secrets.BACKLOG_REPO_TOKEN || secrets.CROSS_REPO_TOKEN || github.token }}
+          PRS_B64: ${{ steps.find.outputs.prs_b64 }}
+          GATE: ${{ steps.gate.outputs.all_pass }}
+        run: |
+          NL=$'\n'
+          PRLIST=""
+          if [ -n "$PRS_B64" ]; then
+            while IFS='|' read -r repo num merg url; do [ -z "$url" ] && continue; PRLIST="${PRLIST}- ${repo} #${num}: ${url}${NL}"; done <<< "$(echo "$PRS_B64" | base64 -d)"
+          fi
+          if [ "$GATE" != "true" ]; then
+            BODY="## ❌ 合入门禁未通过 (Workflow C)${NL}触发者: \`$TRIGGER_USER\`${NL}${NL}PR 有冲突或没找到，请检查后再触发。${NL}${PRLIST}"
+          elif [ "$DRY_RUN" = "true" ]; then
+            BODY="## ✅ 门禁通过 [DRY_RUN]${NL}触发者: \`$TRIGGER_USER\`${NL}${NL}所有 PR mergeable，本次为 DRY_RUN 不实际合入。要真合入评论 \`[小数需求上线]\`（不带 [DRY_RUN]）${NL}${PRLIST}"
+          else
+            BODY="## ✅ 已合入 + 上线 beta (Workflow C)${NL}触发者: \`$TRIGGER_USER\`${NL}${NL}### 合入的 PR${NL}${PRLIST}${NL}### 上线${NL}- 各 PR 所在服务已 \`deployer promote --env beta\`（rollout 对应主部署）${NL}- **前端（datastat）改动**：额外触发了 Jenkins job \`openeuler-test/openeuler-test-datastat-manage-website-02\` 用分支 \`beta\` 构建 + 部署上线环境（构建详情见 Actions 日志里 promote 步的输出 / \`https://jenkins.osinfra.cn/job/openeuler-test/job/openeuler-test-datastat-manage-website-02/\`）${NL}- per-PR 预览资源已 \`deployer cleanup\`${NL}- 公网: https://ai.test.osinfra.cn:9999/"
+          fi
+          echo "$BODY" > /tmp/body.txt
+          gh issue comment "$ISSUE_NUMBER" --repo "$SOURCE_REPO" --body-file /tmp/body.txt
