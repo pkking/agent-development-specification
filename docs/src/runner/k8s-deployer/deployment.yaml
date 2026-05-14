@@ -1,0 +1,12 @@
+# K8s 部署 runner K8s Deployment
+# 待填: apiVersion / kind / metadata / spec
+# 关联: ../../pipeline/generic-layer/runners.md
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-deployer
+  namespace: <<NAMESPACE>>
+spec:
+  replicas: 1
+  # 待填

@@ -1,0 +1,12 @@
+# 通用 AI 开发 runner K8s Deployment
+# 待填: apiVersion / kind / metadata / spec
+# 关联: ../../pipeline/generic-layer/runners.md
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-dev-runner
+  namespace: <<NAMESPACE>>
+spec:
+  replicas: 1
+  # 待填

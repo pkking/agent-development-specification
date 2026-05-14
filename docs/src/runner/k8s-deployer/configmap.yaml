@@ -1,0 +1,7 @@
+# Runner 环境配置(非敏感)
+# 待填
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: <<CM_NAME>>
