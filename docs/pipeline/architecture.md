@@ -36,6 +36,70 @@
 
 ---
 
+## 0.5 前置：Runner 怎么部署的（一次性，先于任何流水线）
+
+> 流水线开跑前，团队 SRE 已经把两类 self-hosted runner 部署在内部 K8s 集群里、并注册到 GitHub。流程 1/2/3 跑起来时，工作负载直接调度到这两类 pod 上。
+> **业务方 / 普通开发者不接触这段**，只有团队 SRE / 平台 owner 第一次接入或扩容 / 升级时才动。
+> **完整的 runner 单文档入口**：[`generic-layer/runners.md`](generic-layer/runners.md) — 部署 / 镜像组件 / 凭据 / 资源 / 升级 / 故障排查全在那一份。
+
+### 0.5.1 两类 runner
+
+| Runner | 跑什么 | runs-on 标签 | 副本数（参考） | 文档锚点 |
+|---|---|---|---|---|
+| `ai-dev-runner` | 流程 1 / 2 / 3 主体（4 agent 对抗 / orchestrate.sh / gates / tester） | `[self-hosted, ai-dev-runner]` | 3 | [runners.md §2](generic-layer/runners.md#2-ai-dev-runner) |
+| `k8s-deployer` | 起 / 清理预览部署（PR preview / 流程 3 promote / `deploy.py`） | `[self-hosted, k8s-deployer]` | 2 | [runners.md §3](generic-layer/runners.md#3-k8s-deployer) |
+
+### 0.5.2 部署方式（要点 — 详细见 [runners.md §2.1](generic-layer/runners.md#21-部署方式架构)）
+
+K8s `Deployment` + `ServiceAccount` + `RBAC` + `ConfigMap` + `Secret`；**镜像由本仓 Dockerfile 构建**，不用 actions-runner-controller / 不用 Helm chart。
+
+代码与 yaml 在 [`../src/runner/`](../src/runner/) 下，各文件作用：[runners.md §2.1 文件清单](generic-layer/runners.md#21-部署方式架构)。
+
+### 0.5.3 部署步骤（5 步 — 详细见 [runners.md §2.3](generic-layer/runners.md#23-部署步骤团队-sre-一次性跑一遍)）
+
+```
+1. 构建镜像     →  src/runner/ai-dev-runner/build-and-push.sh
+2. 拿 GitHub registration token
+3. 建 ns + 注入 Secret
+4. 应用 RBAC → ConfigMap → Deployment
+5. 验证 runner online（GitHub Settings 看，或 kubectl get pod 看）
+```
+
+k8s-deployer 同样跑一遍，差异见 [runners.md §3.4](generic-layer/runners.md#34-部署步骤)。
+
+### 0.5.4 镜像组件清单（详细见 [runners.md §2.2](generic-layer/runners.md#22-镜像组件清单)）
+
+ai-dev-runner 装的：Ubuntu 24.04 底座 + 系统包 + `build-essential` / `python3` / `nodejs/npm` / `openjdk-17 + maven` / `kubectl` / `helm` / `gh` / Claude CLI（或 opencode）/ `actions/runner` v2.317.0 + 非 root `runner` 用户。
+
+k8s-deployer 不装 Node / Java / Claude CLI / build-essential（最小镜像，详见 [runners.md §3.3](generic-layer/runners.md#33-镜像组件清单差异处)）。
+
+### 0.5.5 部署 vs 流水线时序
+
+```
+[团队 SRE 一次性做] 部署 ai-dev-runner + k8s-deployer 到 K8s
+       ↓ (runner pod 持续 online 等单)
+[业务方] 在 backlog 提 issue                ← 阶段 1
+[maintainer] /accepts                       ← 阶段 2
+[人] 评 [<服务名>需求...]                    ← 阶段 3
+       ↓
+GitHub Actions 把 job 派给 label 匹配的 online runner pod
+       ↓
+runner pod 在 $GITHUB_WORKSPACE 跑 yml 步骤
+```
+
+**runner 不每次 job 重新部署** — 长驻 pod，registration token 一次性，过期由 entrypoint 自动重新 register。
+
+### 0.5.6 升级 / 扩容 / 故障（详细见 [runners.md §2.8](generic-layer/runners.md#28-升级--扩容--故障排查)）
+
+| 场景 | 操作 |
+|---|---|
+| 升级镜像 | `build-and-push.sh` → `kubectl set image` |
+| 扩容 | `kubectl scale deployment/ai-dev-runner --replicas=N` |
+| runner 卡死 | `kubectl delete pod -l app=ai-dev-runner` |
+| 凭据轮换 | 更新 Secret → `kubectl rollout restart` |
+
+---
+
 ## 1. 阶段 1：人在 backlog 仓提 issue
 
 **谁做**：业务方 / 需求提出人
