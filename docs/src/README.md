@@ -15,6 +15,6 @@
 
 ## 设计原则
 
-1. **通用层**：不写死任何项目特定的逻辑（如子仓数、目录名、镜像名）。项目特定逻辑由项目仓的 CLAUDE.md / `.preview/service.yaml` 提供。
+1. **通用层**：不写死任何项目特定的逻辑（如子仓数、目录名、镜像名）。项目特定逻辑由项目仓的 CLAUDE.md / [`.preview/service.yaml`](../pipeline/project-layer/preview-service-yaml-spec.md) 提供。
 2. **可替换**：每个组件有清晰输入输出契约，允许项目层覆盖或替换。
 3. **失败可调试**：stdout 全部进 phase log；失败时给可执行的本地复现命令。

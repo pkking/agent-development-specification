@@ -32,7 +32,7 @@
 | `<<PROJECT_DISPLAY_NAME>>` | 数据中台 |
 | `<<TRIGGER_PREFIX>>` | `数据中台` / `小数`（双触发） |
 | `<<DEV_REPOS>>` | `om-dataarts, om-dataarts-deployment, datastat-manage-website, om-deployment, APIMagic` |
-| `<<DEPLOY_MODE>>` | 各子仓不同（见 `.preview/service.yaml`） |
+| `<<DEPLOY_MODE>>` | 各子仓不同（见 [`.preview/service.yaml`](../../pipeline/project-layer/preview-service-yaml-spec.md)） |
 | `<<BASE_DOMAIN>>` | `ai.test.osinfra.cn` |
 | `<<NAMESPACE>>` | `ai-test` |
 | `<<MAINTAINER_WHITELIST>>` | （白名单见项目仓 issue-3-merge-and-deploy.yml）|

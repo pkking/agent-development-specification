@@ -31,7 +31,7 @@ k8s-deployer 部署预览
 ## 3. 覆盖率
 
 UT 行覆盖率门槛由 [`../teams/security-gates/UT-coverage.md`](../teams/security-gates/UT-coverage.md) 定；
-项目层可在 `.preview/service.yaml` 的 `coverage_threshold` 字段提高。
+项目层可在 [`.preview/service.yaml`](project-layer/preview-service-yaml-spec.md) 的 `coverage_threshold` 字段提高。
 
 ## 4. 关联
 

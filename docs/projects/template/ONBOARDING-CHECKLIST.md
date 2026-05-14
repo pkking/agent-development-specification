@@ -5,7 +5,7 @@
 ## A 档（仅 PR 预览） — 2 步
 
 - [ ] 在项目仓加 `.github/workflows/pr-preview-caller.yml`（用本模板 [`.github/workflows/pr-preview-caller.yml.tmpl`](.github/workflows/pr-preview-caller.yml.tmpl)，替换 `<<PROJECT_NAME>>` 等占位符）
-- [ ] 在项目仓加 `.preview/service.yaml`（用本模板 [`.preview/service.yaml.tmpl`](.preview/service.yaml.tmpl)，按需配 image / port / health check）
+- [ ] 在项目仓加 [`.preview/service.yaml`](../../pipeline/project-layer/preview-service-yaml-spec.md)（用本模板 [`.preview/service.yaml.tmpl`](.preview/service.yaml.tmpl)，按需配 image / port / health check）
 
 ## B 档（全 AI 自动开发） — 5 步
 

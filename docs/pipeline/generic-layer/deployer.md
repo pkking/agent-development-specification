@@ -130,7 +130,7 @@ orchestrate.sh / tester 用这套命名规则查/直连资源（如 `kubectl exe
 
 ## 8. promote 到 beta（流程 3 用）
 
-`deploy.py promote --env beta --service <X>` — 触发 Jenkins job（不是直接 `kubectl apply`，因为 beta 镜像由独立 build pipeline 出）。需 `JENKINS_API_USER` + `JENKINS_API_TOKEN`。
+`deploy.py promote --env beta --service <X>` — 触发 Jenkins job（不是直接 `kubectl apply`，因为 beta 镜像由独立 build pipeline 出）。需 `JENKINS_API_USER` + [`JENKINS_API_TOKEN`](credentials-storage.md)。
 
 详细：[`../stage-flow/flow-3-release.md`](../stage-flow/flow-3-release.md)。
 

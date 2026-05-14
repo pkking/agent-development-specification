@@ -19,7 +19,7 @@
 
 ### 第 2 步：service.yaml
 
-在项目仓加 `.preview/service.yaml`：
+在项目仓加 [`.preview/service.yaml`](preview-service-yaml-spec.md)：
 
 - 模板：[`../../projects/template/.preview/service.yaml.tmpl`](../../projects/template/.preview/)
 - 配 `deploy_mode`（dev-pod / data-pod / shared / none）

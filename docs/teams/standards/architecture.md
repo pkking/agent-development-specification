@@ -13,7 +13,7 @@
 
 - 模板：[`../templates/Architecture Design/`](../templates/Architecture%20Design/)
 - 写作经验：[`../context/experience/架构设计说明书编写经验.md`](../context/experience/架构设计说明书编写经验.md)
-- AI 辅助：通过流水线 流程 1 自动生成草稿（[`../prompts/architecture-design.md`](../prompts/architecture-design.md)）
+- AI 辅助：通过流水线 流程 1 自动生成草稿（[`../prompts/design.md`](../prompts/design.md)）
 
 ## 3. 评审
 

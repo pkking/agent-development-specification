@@ -25,7 +25,7 @@ K8s `Deployment` + `ServiceAccount` + `RBAC` + `ConfigMap` + `Secret`。**镜像
 | 文件 | 作用 |
 |---|---|
 | [`../../src/runner/ai-dev-runner/Dockerfile`](../../src/runner/ai-dev-runner/Dockerfile) | 镜像定义（组件清单见 §2.2） |
-| [`../../src/runner/ai-dev-runner/entrypoint.sh`](../../src/runner/ai-dev-runner/entrypoint.sh) | 容器入口：用 `GH_RUNNER_TOKEN` 向 GitHub 注册 → 跑 `run.sh` 监听 job |
+| [`../../src/runner/ai-dev-runner/entrypoint.sh`](../../src/runner/ai-dev-runner/entrypoint.sh) | 容器入口：用 [`GH_RUNNER_TOKEN`](credentials-storage.md) 向 GitHub 注册 → 跑 `run.sh` 监听 job |
 | [`../../src/runner/ai-dev-runner/start-runner.sh`](../../src/runner/ai-dev-runner/start-runner.sh) | 本地 `docker run` 调试用（不是生产部署路径） |
 | [`../../src/runner/ai-dev-runner/build-and-push.sh`](../../src/runner/ai-dev-runner/build-and-push.sh) | 多架构镜像构建 + 推到 registry |
 | [`../../src/runner/ai-dev-runner/deployment.yaml`](../../src/runner/ai-dev-runner/deployment.yaml) | K8s Deployment（envFrom / volumeMounts / resources） |
@@ -92,7 +92,7 @@ kubectl -n ci-runners get pods -l app=ai-dev-runner    # 应该 N 个 Running
 | 来源 | 字段 |
 |---|---|
 | ConfigMap `ai-dev-runner-config` | `GH_OWNER` / `GH_REPO` / `ANTHROPIC_BASE_URL` / `ANTHROPIC_MODEL` |
-| Secret `ai-dev-runner-secrets` | `GH_RUNNER_TOKEN` / `ANTHROPIC_API_KEY` / `OPENCODE_API_KEY` / `BACKLOG_REPO_TOKEN` / `CROSS_REPO_TOKEN` / `AI_TEST_KUBECONFIG` / `LOCAL_DB_PASSWORD` |
+| Secret `ai-dev-runner-secrets` | `GH_RUNNER_TOKEN` / [`ANTHROPIC_API_KEY`](credentials-storage.md) / `OPENCODE_API_KEY` / `BACKLOG_REPO_TOKEN` / `CROSS_REPO_TOKEN` / `AI_TEST_KUBECONFIG` / `LOCAL_DB_PASSWORD` |
 
 凭据存储分档规则：[`credentials-storage.md`](credentials-storage.md)。
 

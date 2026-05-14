@@ -28,7 +28,7 @@
 
 ## 4. 项目层覆盖
 
-项目可在 `.preview/service.yaml` 中声明 `test_targets`，覆盖默认的 `npm test` / `pytest`。
+项目可在 [`.preview/service.yaml`](../project-layer/preview-service-yaml-spec.md) 中声明 `test_targets`，覆盖默认的 `npm test` / `pytest`。
 
 ## 5. 关联
 

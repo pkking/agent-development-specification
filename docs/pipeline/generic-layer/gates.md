@@ -38,7 +38,7 @@ orchestrator 在每轮 dev → review 之间夹一次 gates；
 
 ## 5. 项目层定制
 
-项目可在 `projects/<project>/docs/security.md` 中声明额外门禁（如 K8s policy check、IaC 合规扫描），通过 `.preview/service.yaml` 的 `extra_gates` 字段注入。
+项目可在 `projects/<project>/docs/security.md` 中声明额外门禁（如 K8s policy check、IaC 合规扫描），通过 [`.preview/service.yaml`](../project-layer/preview-service-yaml-spec.md) 的 `extra_gates` 字段注入。
 
 ## 6. 关联
 

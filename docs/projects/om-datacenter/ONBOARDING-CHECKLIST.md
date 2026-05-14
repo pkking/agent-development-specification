@@ -5,7 +5,7 @@ om-datacenter 是 B 档实例，下面所有项均已勾选。
 ## A 档基础
 
 - [x] 项目仓 `.github/workflows/pr-deploy-preview.yml`（人工 PR 预览路径）
-- [x] 项目仓 `.preview/service.yaml`（各 dev 子仓各有一份）
+- [x] 项目仓 [`.preview/service.yaml`](../../pipeline/project-layer/preview-service-yaml-spec.md)（各 dev 子仓各有一份）
 
 ## B 档增量
 

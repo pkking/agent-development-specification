@@ -13,7 +13,7 @@
 ## 2. K8s 资源
 
 - 资源 yaml：[`../k8s/`](../k8s/)
-- 各子仓 service.yaml：在各子仓的 `.preview/service.yaml`
+- 各子仓 service.yaml：在各子仓的 [`.preview/service.yaml`](../../../pipeline/project-layer/preview-service-yaml-spec.md)
 
 ## 3. 环境
 

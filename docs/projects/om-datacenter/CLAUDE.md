@@ -35,7 +35,7 @@
 
 ## 5. 部署
 
-- 部署模式：**各子仓不同**（前端走 `shared`、API 走 `dev-pod`、有状态服务走 `data-pod`） — 详见各子仓 `.preview/service.yaml`
+- 部署模式：**各子仓不同**（前端走 `shared`、API 走 `dev-pod`、有状态服务走 `data-pod`） — 详见各子仓 [`.preview/service.yaml`](../../pipeline/project-layer/preview-service-yaml-spec.md)
 - 预览域名基础：`ai.test.osinfra.cn`
 - K8s namespace：`ai-test`
 

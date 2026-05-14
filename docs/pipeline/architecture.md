@@ -208,7 +208,7 @@ ai-dev-runner 跑在 K8s pod 里、以非 root 用户 `runner` 运行（见 [`..
 
 1. **Workflow checkout 项目仓**（om-datacenter 自身，作为工具仓），不拉 submodule
 2. **算路径**：`DOCS_BRANCH=issue-<N>-design-docs`，目标文件路径 `opensourceways/<source-repo-short>/issue_docs/<N>/Requirement Analysis/#<N> Requirement Analysis Specification.md`
-3. **Setup opencode env**（装 LLM 调用器，密钥来自 `OPENCODE_API_KEY`）
+3. **Setup opencode env**（装 LLM 调用器，密钥来自 [`OPENCODE_API_KEY`](generic-layer/credentials-storage.md)）
 4. **Clone backlog 仓**到 `$GITHUB_WORKSPACE/backlog`（实际路径 `/home/runner/actions-runner/_work/<repo>/<repo>/backlog`，见 §3.5），新建（或复用）`DOCS_BRANCH`
 5. **Fetch issue 全文**（标题 + 正文 + 全部评论）到 `/tmp/opencode/issue.txt`，由 composite action `.github/actions/fetch-issue` 完成
 6. **跑 AI agent 写文档**（核心一步）：
@@ -241,7 +241,7 @@ ai-dev-runner 跑在 K8s pod 里、以非 root 用户 `runner` 运行（见 [`..
 | Secret | 用途 |
 |---|---|
 | `OPENCODE_API_KEY` | AI agent 调 LLM |
-| `BACKLOG_REPO_TOKEN`（或 `CROSS_REPO_TOKEN`） | clone backlog、push docs 分支、开 PR、回评 issue |
+| [`BACKLOG_REPO_TOKEN`](generic-layer/credentials-storage.md)（或 `CROSS_REPO_TOKEN`） | clone backlog、push docs 分支、开 PR、回评 issue |
 
 凭据档位见 [`generic-layer/credentials-storage.md`](generic-layer/credentials-storage.md)。
 
@@ -280,7 +280,7 @@ ai-dev-runner 跑在 K8s pod 里、以非 root 用户 `runner` 运行（见 [`..
 |---|---|---|---|---|---|
 | ① | **design** | [`../projects/om-datacenter/.github/agents/design.md`](../projects/om-datacenter/.github/agents/design.md) | umbrella [`../projects/om-datacenter/CLAUDE.md`](../projects/om-datacenter/CLAUDE.md) + 各 dev 子仓自己的 `CLAUDE.md`（在 `$WORKSPACE_DIR/<submodule>/CLAUDE.md`） | issue.txt + requirement_analysis.md | `/tmp/opencode/route.json`（路由 + target_repos）+ `/tmp/opencode/design.md`（含可量化验收标准） |
 | ② | **dev** | [`../projects/om-datacenter/.github/agents/dev.md`](../projects/om-datacenter/.github/agents/dev.md) | 同上（umbrella + 各 dev 子仓） | design.md + route.json | 改各 dev 仓代码 + commit/push `<BRANCH>` + 开 PR + `/tmp/opencode/result.json` + `change_summary.md` |
-| ③ | **deploy**（脚本非 agent） | [`../src/deployer/deploy.py`](../src/deployer/deploy.py) — 详见 §5.2.4 | — | result.json 的 PR 列表 + `.preview/service.yaml` | 各 PR 一个 nginx Ingress 预览 URL；写 `/tmp/opencode/deploy/pr-<N>.json` |
+| ③ | **deploy**（脚本非 agent） | [`../src/deployer/deploy.py`](../src/deployer/deploy.py) — 详见 §5.2.4 | — | result.json 的 PR 列表 + [`.preview/service.yaml`](project-layer/preview-service-yaml-spec.md) | 各 PR 一个 nginx Ingress 预览 URL；写 `/tmp/opencode/deploy/pr-<N>.json` |
 | ④ | **tester** | [`../projects/om-datacenter/.github/agents/tester.md`](../projects/om-datacenter/.github/agents/tester.md) | 同上 | design.md 验收标准 + 各 PR 预览 + apimagic_endpoints | `test_report.md`（4 类测试逐项）+ `test_fail.md`（打回清单）+ `test_retro.md` |
 | ⑤ | **review** | [`../projects/om-datacenter/.github/agents/review.md`](../projects/om-datacenter/.github/agents/review.md) | 同上 | 各 PR diff + gates 结果 | `review_report.md` + `review_fail.md`（打回清单） |
 | feedback | — | — | — | tester + review 的打回清单 | 合成 `/tmp/opencode/feedback.md` 回给 dev / design 重跑 |

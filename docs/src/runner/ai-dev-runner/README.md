@@ -2,7 +2,7 @@
 
 > Self-hosted GitHub Actions runner，标签 `[self-hosted, ai-dev-runner]`，跑在 K8s 集群里。流程 1 / 2 / 3 主体（4 agent 对抗 / orchestrate.sh / gates / tester）在这上面跑。
 >
-> **完整文档**：[`../../pipeline/generic-layer/runners.md`](../../pipeline/generic-layer/runners.md)（10 节，覆盖部署 / 组件 / 凭据 / 资源 / 升级 / 故障）。
+> **完整文档**：[`../../../pipeline/generic-layer/runners.md`](../../../pipeline/generic-layer/runners.md)（10 节，覆盖部署 / 组件 / 凭据 / 资源 / 升级 / 故障）。
 
 ## 镜像里装了什么
 
@@ -17,7 +17,7 @@
 - GitHub Actions Runner：`actions/runner` v2.317.0，落在 `/home/runner/actions-runner/`
 - 非 root 用户 `runner`（带 NOPASSWD sudo）
 
-完整组件对照：[runners.md §2.2](../../pipeline/generic-layer/runners.md#22-镜像组件清单)。
+完整组件对照：[runners.md §2.2](../../../pipeline/generic-layer/runners.md#22-镜像组件清单)。
 
 ## 必须的 Token / 配置（部署 runner 前要先准备）
 
@@ -34,19 +34,19 @@
 
 | Secret 字段 | 必填 | 用途 | 从哪拿 |
 |---|---|---|---|
-| `GH_RUNNER_TOKEN` | ✓ | 向 GitHub 注册 self-hosted runner 的一次性 token | GitHub: Settings → Actions → Runners → New self-hosted runner |
-| `ANTHROPIC_API_KEY` | 用 Claude CLI 时 | 4 agent 调 LLM | console.anthropic.com → API Keys |
-| `OPENCODE_API_KEY` | 用 opencode 时（om-datacenter 当前用） | 同上，opencode 走它的 broker | 团队 LLM 平台 |
-| `BACKLOG_REPO_TOKEN` | ✓ | 跨仓 clone backlog / push 需求 PR / merge dev 仓 PR | GitHub PAT（fine-grained：对相关仓 `Contents: rw` + `Pull requests: rw` + `Issues: rw`） |
-| `CROSS_REPO_TOKEN` | 流程 2 用 | clone 各 dev 子仓 + 开 PR；与 `BACKLOG_REPO_TOKEN` 任一即可（om-datacenter yml 里写成二选一 fallback） | 同上 |
-| `AI_TEST_KUBECONFIG` | 流程 2/3 调 deploy.py 时 | 起预览 / 清理预览 | 集群 admin 给你的 kubeconfig（base64 编码后存入 Secret） |
-| `LOCAL_DB_PASSWORD` | 仅 APIMagic per-PR 模式 | 建 `magic_api_file_v2_pr<N>` 表 | PG admin 给的密码 |
+| [`GH_RUNNER_TOKEN`](../../../pipeline/generic-layer/credentials-storage.md) | ✓ | 向 GitHub 注册 self-hosted runner 的一次性 token | GitHub: Settings → Actions → Runners → New self-hosted runner |
+| [`ANTHROPIC_API_KEY`](../../../pipeline/generic-layer/credentials-storage.md) | 用 Claude CLI 时 | 4 agent 调 LLM | console.anthropic.com → API Keys |
+| [`OPENCODE_API_KEY`](../../../pipeline/generic-layer/credentials-storage.md) | 用 opencode 时（om-datacenter 当前用） | 同上，opencode 走它的 broker | 团队 LLM 平台 |
+| [`BACKLOG_REPO_TOKEN`](../../../pipeline/generic-layer/credentials-storage.md) | ✓ | 跨仓 clone backlog / push 需求 PR / merge dev 仓 PR | GitHub PAT（fine-grained：对相关仓 `Contents: rw` + `Pull requests: rw` + `Issues: rw`） |
+| [`CROSS_REPO_TOKEN`](../../../pipeline/generic-layer/credentials-storage.md) | 流程 2 用 | clone 各 dev 子仓 + 开 PR；与 `BACKLOG_REPO_TOKEN` 任一即可（om-datacenter yml 里写成二选一 fallback） | 同上 |
+| [`AI_TEST_KUBECONFIG`](../../../pipeline/generic-layer/credentials-storage.md) | 流程 2/3 调 deploy.py 时 | 起预览 / 清理预览 | 集群 admin 给你的 kubeconfig（base64 编码后存入 Secret） |
+| [`LOCAL_DB_PASSWORD`](../../../pipeline/generic-layer/credentials-storage.md) | 仅 APIMagic per-PR 模式 | 建 `magic_api_file_v2_pr<N>` 表 | PG admin 给的密码 |
 
 **轮换 / 失效处理**：
 - `GH_RUNNER_TOKEN` 一次性；过期由 entrypoint.sh 自动重 register（用同一份 Secret 重启 pod 就行）
 - 其它 token 失效：更新 Secret → `kubectl rollout restart deployment/ai-dev-runner -n ci-runners`
 
-完整凭据档位 / 三档存储规则：[`../../pipeline/generic-layer/credentials-storage.md`](../../pipeline/generic-layer/credentials-storage.md)。
+完整凭据档位 / 三档存储规则：[`../../../pipeline/generic-layer/credentials-storage.md`](../../../pipeline/generic-layer/credentials-storage.md)。
 
 ## 为什么要挂 `/var/run/docker.sock`
 
@@ -109,4 +109,4 @@ deployment.yaml 里有 hostPath 挂 `/var/run/docker.sock` 到容器内。**原�
 
 ## 升级 / 扩容 / 故障
 
-见 [runners.md §2.8](../../pipeline/generic-layer/runners.md#28-升级--扩容--故障排查)。
+见 [runners.md §2.8](../../../pipeline/generic-layer/runners.md#28-升级--扩容--故障排查)。

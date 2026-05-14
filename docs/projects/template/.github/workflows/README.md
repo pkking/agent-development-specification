@@ -46,11 +46,11 @@
 
 | Secret | 用在哪个 yml |
 |---|---|
-| `BACKLOG_REPO_TOKEN` / `CROSS_REPO_TOKEN` | 全部 |
-| `OPENCODE_API_KEY`（或 `ANTHROPIC_API_KEY`） | issue-1 / issue-2 |
-| `AI_TEST_KUBECONFIG` | issue-2 / issue-3 / pr-deploy-preview |
-| `JENKINS_API_USER` / `JENKINS_API_TOKEN` | issue-3 |
-| `LOCAL_DB_PASSWORD`（项目专有，如 APIMagic per-PR） | issue-2 注释段（按需放开） |
+| [`BACKLOG_REPO_TOKEN`](../../../../pipeline/generic-layer/credentials-storage.md) / `CROSS_REPO_TOKEN` | 全部 |
+| `OPENCODE_API_KEY`（或 [`ANTHROPIC_API_KEY`](../../../../pipeline/generic-layer/credentials-storage.md)） | issue-1 / issue-2 |
+| [`AI_TEST_KUBECONFIG`](../../../../pipeline/generic-layer/credentials-storage.md) | issue-2 / issue-3 / pr-deploy-preview |
+| `JENKINS_API_USER` / [`JENKINS_API_TOKEN`](../../../../pipeline/generic-layer/credentials-storage.md) | issue-3 |
+| [`LOCAL_DB_PASSWORD`](../../../../pipeline/generic-layer/credentials-storage.md)（项目专有，如 APIMagic per-PR） | issue-2 注释段（按需放开） |
 
 ## 实例参考
 

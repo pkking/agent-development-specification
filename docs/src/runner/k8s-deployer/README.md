@@ -2,7 +2,7 @@
 
 > Self-hosted GitHub Actions runner，标签 `[self-hosted, k8s-deployer]`，跑在 K8s 集群里。**专门跑 deploy.py 起 / 清 / promote 预览**（旁支 PR preview workflow 主要用它；流程 2 / 3 内的 deploy 由 ai-dev-runner 跑，见下）。
 >
-> **完整文档**：[`../../pipeline/generic-layer/runners.md`](../../pipeline/generic-layer/runners.md) + [`../../pipeline/generic-layer/deployer.md`](../../pipeline/generic-layer/deployer.md)。
+> **完整文档**：[`../../../pipeline/generic-layer/runners.md`](../../../pipeline/generic-layer/runners.md) + [`../../../pipeline/generic-layer/deployer.md`](../../../pipeline/generic-layer/deployer.md)。
 
 ## 为什么单独一类 runner
 
@@ -20,7 +20,7 @@
 - GitHub Actions Runner：`actions/runner` v2.317.0
 - 非 root 用户 `deployer`
 
-完整对照：[runners.md §3.3](../../pipeline/generic-layer/runners.md#33-镜像组件清单差异处)。
+完整对照：[runners.md §3.3](../../../pipeline/generic-layer/runners.md#33-镜像组件清单差异处)。
 
 ## 必须的 Token / 配置
 
@@ -35,11 +35,11 @@
 
 | Secret 字段 | 必填 | 用途 | 从哪拿 |
 |---|---|---|---|
-| `GH_RUNNER_TOKEN` | ✓ | 注册 self-hosted runner | GitHub: Settings → Actions → Runners → New self-hosted runner |
-| `AI_TEST_KUBECONFIG`（挂为 `deployer-kubeconfig` Secret 的 volume，详见 [`deployment.yaml`](deployment.yaml)） | ✓ | kubectl 操作目标 namespace 的权限 | 集群 admin |
-| `JENKINS_API_USER` / `JENKINS_API_TOKEN` | 流程 3 promote 时 | 触发 Jenkins job 上 beta | Jenkins admin |
+| [`GH_RUNNER_TOKEN`](../../../pipeline/generic-layer/credentials-storage.md) | ✓ | 注册 self-hosted runner | GitHub: Settings → Actions → Runners → New self-hosted runner |
+| [`AI_TEST_KUBECONFIG`](../../../pipeline/generic-layer/credentials-storage.md)（挂为 `deployer-kubeconfig` Secret 的 volume，详见 [`deployment.yaml`](deployment.yaml)） | ✓ | kubectl 操作目标 namespace 的权限 | 集群 admin |
+| `JENKINS_API_USER` / [`JENKINS_API_TOKEN`](../../../pipeline/generic-layer/credentials-storage.md) | 流程 3 promote 时 | 触发 Jenkins job 上 beta | Jenkins admin |
 
-**不需要** `ANTHROPIC_API_KEY` / `OPENCODE_API_KEY` / `BACKLOG_REPO_TOKEN`（这里只跑 deploy 脚本，不跑 agent）。
+**不需要** [`ANTHROPIC_API_KEY`](../../../pipeline/generic-layer/credentials-storage.md) / `OPENCODE_API_KEY` / `BACKLOG_REPO_TOKEN`（这里只跑 deploy 脚本，不跑 agent）。
 
 ## RBAC（关键差异）
 
@@ -65,7 +65,7 @@
 | 旁支 PR preview workflow（PR closed） | `python3 deploy.py --cleanup --pr-number=...` 删预览 |
 | 流程 3 cleanup 阶段（也可以转给它跑） | 同 cleanup |
 
-流程 2 / 3 内的 deploy 默认还是由 **ai-dev-runner** 跑（因为它已经有 KUBECONFIG + 上下文）；只在「不能给 ai-dev-runner 那么大权限」的项目场景才必须 k8s-deployer。详见 [deployer.md §9](../../pipeline/generic-layer/deployer.md#9-哪个-runner-跑这个脚本)。
+流程 2 / 3 内的 deploy 默认还是由 **ai-dev-runner** 跑（因为它已经有 KUBECONFIG + 上下文）；只在「不能给 ai-dev-runner 那么大权限」的项目场景才必须 k8s-deployer。详见 [deployer.md §9](../../../pipeline/generic-layer/deployer.md#9-哪个-runner-跑这个脚本)。
 
 ## 部署步骤
 
@@ -106,4 +106,4 @@
 
 ## 升级 / 扩容 / 故障
 
-见 [runners.md §3.6](../../pipeline/generic-layer/runners.md#36-升级--扩容--故障排查)。
+见 [runners.md §3.6](../../../pipeline/generic-layer/runners.md#36-升级--扩容--故障排查)。

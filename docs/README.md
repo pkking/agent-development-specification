@@ -66,7 +66,7 @@
 1. **复制模板**：`cp -r docs/projects/template/ docs/projects/<your-project>/`
 2. **填占位符**：按 [`projects/template/ONBOARDING-CHECKLIST.md`](projects/template/ONBOARDING-CHECKLIST.md) 把 `<<PROJECT_NAME>>` 等占位符替换成实际值
 3. **选档位**：A 档（仅 PR 预览）见 [`pipeline/project-layer/onboarding-tier-A.md`](pipeline/project-layer/onboarding-tier-A.md) / B 档（全 AI 开发）见 [`pipeline/project-layer/onboarding-tier-B.md`](pipeline/project-layer/onboarding-tier-B.md)
-4. **项目仓配文件**：在你的项目仓加 caller workflow + `.preview/service.yaml` + `CLAUDE.md`，规范见 [`pipeline/project-layer/`](pipeline/project-layer/)
+4. **项目仓配文件**：在你的项目仓加 caller workflow + [`.preview/service.yaml`](pipeline/project-layer/preview-service-yaml-spec.md) + `CLAUDE.md`，规范见 [`pipeline/project-layer/`](pipeline/project-layer/)
 5. **自检**：跑 onboarding 自检脚本验证接入完整
 
 ## 快速开始（按角色）
