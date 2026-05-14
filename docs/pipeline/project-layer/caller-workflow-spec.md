@@ -1,28 +1,64 @@
-# 项目 caller workflow 规范
+# 项目层 caller-workflow 规范
 
-> 本文件规定项目仓 .github/workflows/ 下 caller workflow 的写法：在 pull_request 时 repository_dispatch 给通用层 pr-deploy-preview.yml；在 issue_comment 时把 [<服务名>需求*] 评论 forward 给项目仓的 issue-{1,2,3}.yml。
+> 项目仓 `.github/workflows/caller-workflow.yml` 是把 issue_comment 事件转给通用层的桥梁。
 
-## 1. 适用场景 / 前置条件
+## 1. 职责
 
-待填。
+- 监听 issue_comment 事件
+- 识别触发词 `[<服务名>需求...]`
+- 通过 `repository_dispatch` 把事件转给通用层骨架仓
 
-## 2. 步骤
+## 2. 必含
 
-待填（按 step 列：做什么 / 改哪个文件 / 验收）。
+```yaml
+on:
+  issue_comment:
+    types: [created]
 
-## 3. 模板引用
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    if: github.event.issue.state == 'open'
+    steps:
+      - name: Parse trigger
+        id: parse
+        run: |
+          # 识别 [<服务名>需求] / [<服务名>需求分析] / [<服务名>需求实现] / [<服务名>需求上线]
+          # 设置 event_type 输出
+      - name: Dispatch
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.DISPATCH_TOKEN }}
+          repository: <generic-layer-org>/<generic-layer-repo>
+          event-type: ${{ steps.parse.outputs.event_type }}
+          client-payload: |
+            {
+              "issue_number": "...",
+              "comment_author": "...",
+              "project": "<<PROJECT_NAME>>"
+            }
+```
 
-待填（链 [`../../projects/template/`](../../projects/template/) 对应文件）。
+## 3. 触发词识别
 
-## 4. 实例引用（om-datacenter）
+| 评论 | event_type |
+|---|---|
+| `[<服务名>需求]` | `trigger-menu` |
+| `[<服务名>需求分析]` | `requirement-analyze` |
+| `[<服务名>需求实现]` | `implement-preview` |
+| `[<服务名>需求上线]` | `release-deploy` |
 
-待填（链 [`../../projects/om-datacenter/`](../../projects/om-datacenter/) 对应文件）。
+## 4. 白名单校验
 
-## 5. 常见问题
+`release-deploy` 类型必须先在 caller workflow 里校验评论人在 maintainer 白名单内，
+不在则直接评论拒绝原因 + 不 dispatch。
 
-待填。
+## 5. 模板
 
-## 6. 关联文档
+- 模板：[`../../projects/template/.github/workflows/caller-workflow.yml.tmpl`](../../projects/template/.github/workflows/)
 
-- 全景图：[`../architecture.md`](../architecture.md)
-- 通用机制：[`../generic-layer/`](../generic-layer/)
+## 6. 关联
+
+- 通用层骨架：[`../generic-layer/workflow-skeletons.md`](../generic-layer/workflow-skeletons.md)
+- 接入 B 档：[`onboarding-tier-B.md`](onboarding-tier-B.md)
+- 触发菜单 prompt：项目层 `prompts/trigger-menu.md`

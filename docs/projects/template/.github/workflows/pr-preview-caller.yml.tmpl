@@ -1,12 +1,34 @@
-# PR 预览 Caller Workflow
+# PR 预览 caller — A 档接入仅此一个 workflow
+# 复制到 <<PROJECT_NAME>>/.github/workflows/pr-preview-caller.yml
 
-> **本文件是模板**，复制到项目仓后按 [`../ONBOARDING-CHECKLIST.md`](../ONBOARDING-CHECKLIST.md) 替换占位符。
+name: <<PROJECT_NAME>> PR Preview
 
-## 待填占位符
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
 
-（无）
+permissions:
+  pull-requests: write
+  contents: read
 
-## 内容大纲
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-- on: pull_request
-- repository_dispatch event_type=pr_deploy
+      - name: Dispatch preview to k8s-deployer
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.DISPATCH_TOKEN }}
+          repository: <generic-layer-org>/<generic-layer-repo>
+          event-type: pr-preview
+          client-payload: |
+            {
+              "project": "<<PROJECT_NAME>>",
+              "namespace": "<<NAMESPACE>>",
+              "base_domain": "<<BASE_DOMAIN>>",
+              "pr_number": "${{ github.event.pull_request.number }}",
+              "pr_action": "${{ github.event.action }}",
+              "sha": "${{ github.event.pull_request.head.sha }}"
+            }

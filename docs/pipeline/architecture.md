@@ -52,7 +52,7 @@
 | 项 | 内容 |
 |---|---|
 | 谁做 | 业务方 / 需求提出人 |
-| 触发 | 访问 [`opensourceways/backlog`](https://github.com/opensourceways/backlog) issues → New Issue |
+| 触发 | 访问 backlog 仓 issues → New Issue |
 | 系统做啥 | 无（等 maintainer accept） |
 | 模板 | [`../teams/templates/Requirement Analysis/`](../teams/templates/Requirement%20Analysis/) |
 | 规范 | [`../teams/context/team/issue-workflow-guide.md`](../teams/context/team/issue-workflow-guide.md) §Stage 1 |
@@ -124,7 +124,7 @@
 | 3 | Decide A_MODE | runner pod | inline shell | - | issue 标题 | `A_MODE=ra-doc` 或 `user-view` |
 | 4 | Setup opencode | runner pod | composite action（[runner Dockerfile](../src/runner/ai-dev-runner/Dockerfile)）| `OPENCODE_API_KEY` | - | `opencode ready` |
 | 5 | Clone backlog → 切分支 → AI 写文档 | `/tmp/backlog-docs/` | opencode + agent `requirements-doc` | `BACKLOG_REPO_TOKEN` | 模板 [`../teams/templates/Requirement Analysis/`](../teams/templates/Requirement%20Analysis/) + 经验 [`../teams/context/experience/需求分析说明书编写经验.md`](../teams/context/experience/) | 文档落到 `opensourceways/<repo>/issue_docs/<N>/Requirement Analysis/` |
-| 6 | push + 开 PR | `/tmp/backlog-docs/` | `gh pr create` | `BACKLOG_REPO_TOKEN` | [`pr-comment-protocol.md`](pr-comment-protocol.md) | `PR opened: https://github.com/.../pull/N` |
+| 6 | push + 开 PR | `/tmp/backlog-docs/` | `gh pr create` | `BACKLOG_REPO_TOKEN` | [`pr-comment-protocol.md`](pr-comment-protocol.md) | `PR opened: <pr-url>` |
 | 7 | 回评 issue 贴 PR 链接 | runner pod | `gh issue comment` | `BACKLOG_REPO_TOKEN` | [`pr-comment-protocol.md`](pr-comment-protocol.md) §流程 1 评论模板 | `Comment posted` |
 
 **完成判据**：issue 收到 PR 链接评论；backlog 仓收到需求文档 PR

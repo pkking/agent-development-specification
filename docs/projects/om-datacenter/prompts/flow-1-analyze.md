@@ -1,7 +1,15 @@
-# 占位 — prompts/flow-1-analyze.md
+# 数据中台 — 流程 1 项目化 Prompt
 
-> 本文件是 om-datacenter 项目实例的占位文件。
-> 实际内容将从 `opensourceways/om-datacenter` 仓对应文件拷贝改写到此。
->
-> 对应模板：[`../template/prompts/flow-1-analyze.md.tmpl`](../template/prompts/flow-1-analyze.md.tmpl) 或 [`../template/flow-1-analyze.md.tmpl`](../template/flow-1-analyze.md.tmpl)
-> 关联文档：[`../../pipeline/architecture.md`](../../pipeline/architecture.md)
+> 团队 prompt [`../../../teams/prompts/requirement-analysis.md`](../../../teams/prompts/requirement-analysis.md) 之后追加加载。
+
+## 项目专属补充
+
+- 数据中台的需求经常跨 5 个子仓。请在需求文档「跨服务依赖」段显式列：本需求会改哪几个子仓
+- 涉及社区数据采集的需求，必须在「不做什么」中明确「不抓取 PII / 私有仓库」
+- 必引用：
+  - [`../docs/architecture.md`](../docs/architecture.md)
+  - [`../docs/api-spec.md`](../docs/api-spec.md)
+
+## 关联
+
+- 团队 prompt：[`../../../teams/prompts/requirement-analysis.md`](../../../teams/prompts/requirement-analysis.md)

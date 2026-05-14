@@ -1,13 +1,21 @@
-# K8s ingress.yaml
-
-> **本文件是模板**，复制到项目仓后按 [`../ONBOARDING-CHECKLIST.md`](../ONBOARDING-CHECKLIST.md) 替换占位符。
-
-## 待填占位符
-
-- `<<PROJECT_NAME>>`
-- `<<NAMESPACE>>`
-
-## 内容大纲
-
-- apiVersion / kind / metadata
-- spec
+# K8s Ingress 模板 — <<PROJECT_NAME>>
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: <<PROJECT_NAME>>
+  namespace: <<NAMESPACE>>
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - host: <<PROJECT_NAME>>.<<BASE_DOMAIN>>
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: <<PROJECT_NAME>>
+                port:
+                  number: 80

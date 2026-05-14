@@ -1,7 +1,23 @@
 #!/usr/bin/env bash
-# 构建 通用 AI 开发 runner 镜像并 push 到 SWR
-# 待填: 完整实现
-
+# 构建 + 推送 ai-dev-runner 镜像。
 set -euo pipefail
-IMAGE="swr.cn-southwest-2.myhuaweicloud.com/<org>/<<IMAGE_NAME>>:latest"
-echo "[build] 待填: docker buildx build --platform linux/amd64,linux/arm64 --push -t $IMAGE ."
+
+REGISTRY="${REGISTRY:?REGISTRY required, e.g. registry.example.com/team}"
+IMAGE_NAME="${IMAGE_NAME:-ai-dev-runner}"
+TAG="${TAG:-$(date +%Y%m%d-%H%M%S)}"
+PLATFORMS="${PLATFORMS:-linux/amd64,linux/arm64}"
+
+FULL="${REGISTRY}/${IMAGE_NAME}"
+
+# 兼容旧 docker（无 buildx 时退到 docker build + push）
+if docker buildx version >/dev/null 2>&1; then
+  docker buildx build --platform "${PLATFORMS}" \
+    -t "${FULL}:${TAG}" -t "${FULL}:latest" \
+    --push .
+else
+  docker build -t "${FULL}:${TAG}" -t "${FULL}:latest" .
+  docker push "${FULL}:${TAG}"
+  docker push "${FULL}:latest"
+fi
+
+echo "[build-and-push] pushed ${FULL}:${TAG} and ${FULL}:latest"

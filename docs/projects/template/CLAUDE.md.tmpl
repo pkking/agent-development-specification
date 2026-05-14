@@ -1,21 +1,55 @@
 # 项目级 CLAUDE.md — <<PROJECT_DISPLAY_NAME>>
 
-> **本文件是模板**，复制到项目仓后按 [`../ONBOARDING-CHECKLIST.md`](../ONBOARDING-CHECKLIST.md) 替换占位符。
+> 本文件复制到项目仓 `<<PROJECT_NAME>>/CLAUDE.md`，按下方占位符逐字替换。
+> 与团队层 [`../../teams/CLAUDE.md`](../../teams/CLAUDE.md) 配套，本文件覆盖或扩展团队规范。
+> 优先级：个人层 `~/.claude/CLAUDE.md` > 项目层（本文件） > 团队层。
 
-## 待填占位符
+## 1. 项目一句话
 
-- `<<PROJECT_NAME>>`
-- `<<PROJECT_DISPLAY_NAME>>`
-- `<<DEV_REPOS>>`
-- `<<TRIGGER_PREFIX>>`
-- `<<DEPLOY_MODE>>`
-- `<<MAINTAINER_WHITELIST>>`
+<<PROJECT_DISPLAY_NAME>>（`<<PROJECT_NAME>>`）— **一句话用途描述，必填**。
 
-## 内容大纲
+## 2. 项目档位
 
-- 项目一句话介绍
-- 子仓清单
-- 铁规（敏感信息绝不入仓）
-- AI 自动开发流程
-- 部署约定
-- 覆盖团队规范的部分
+- 接入档位：B 档（全 AI 自动开发）
+- 接入参考：[`../../pipeline/project-layer/onboarding-tier-B.md`](../../pipeline/project-layer/onboarding-tier-B.md)
+
+## 3. 触发词
+
+- `[<<TRIGGER_PREFIX>>需求]` — 菜单
+- `[<<TRIGGER_PREFIX>>需求分析]` — 流程 1
+- `[<<TRIGGER_PREFIX>>需求实现]` — 流程 2
+- `[<<TRIGGER_PREFIX>>需求上线]` — 流程 3（白名单 `<<MAINTAINER_WHITELIST>>`）
+
+## 4. 子仓清单（如为 umbrella 项目）
+
+<<DEV_REPOS>> — 逗号分隔，每个子仓在项目根目录用 git submodule 管理。
+
+## 5. 部署
+
+- 默认部署模式：`<<DEPLOY_MODE>>`（详见 [`../../pipeline/generic-layer/deployer.md`](../../pipeline/generic-layer/deployer.md)）
+- 预览域名：`pr-<n>.<<BASE_DOMAIN>>`
+- K8s namespace：`<<NAMESPACE>>`
+
+## 6. 项目铁规
+
+> 列项目专属的「必须」「禁止」事项。下方为示例，按项目实际改写：
+
+- 禁止把数据库 root 密码写进代码或文档；放 Vault sidecar 注入
+- 任何对外接口必须配 OAuth2；不允许裸 API
+- 大表 schema 变更必须经至少两位 maintainer 评审
+- 详尽安全规则继承自 [`../../teams/standards/security.md`](../../teams/standards/security.md)
+
+## 7. 覆盖团队规范的部分
+
+> 在本项目层显式声明与团队规范的差异（任意可选）：
+
+- 编码风格覆盖：[`docs/coding-overrides.md`](docs/coding-overrides.md)
+- 测试策略调整：[`docs/test-strategy.md`](docs/test-strategy.md)
+- 部署细节：[`docs/deployment.md`](docs/deployment.md)
+- 凭据清单：[`docs/credentials-inventory.md`](docs/credentials-inventory.md)
+
+## 8. 关联
+
+- 团队 CLAUDE.md：[`../../teams/CLAUDE.md`](../../teams/CLAUDE.md)
+- 通用流水线全景：[`../../pipeline/architecture.md`](../../pipeline/architecture.md)
+- 模板自检：[`../ONBOARDING-CHECKLIST.md`](../ONBOARDING-CHECKLIST.md)

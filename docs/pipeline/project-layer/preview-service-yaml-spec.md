@@ -1,28 +1,53 @@
-# .preview/service.yaml 规范
+# 项目层 .preview/service.yaml 规范
 
-> 本文件规定 .preview/service.yaml 必含字段：deployer 用此读取项目预览部署所需镜像、端口、健康检查、卷挂载、环境变量。决定 deploy.py 走哪种模式（dev-pod / data-pod / shared）。
+> 项目仓 `.preview/service.yaml` 是 PR 预览部署的唯一配置入口。
 
-## 1. 适用场景 / 前置条件
+## 1. 必含字段
 
-待填。
+```yaml
+project: <project-name>        # 必填
+service: <service-name>        # 必填
+deploy_mode: dev-pod           # dev-pod | data-pod | shared | none
+image:
+  registry: <registry-url>
+  repo: <repo-path>
+  tag: ${PR_NUMBER}            # 占位符，由 deployer 替换
+port: 8080
+health_check:
+  path: /healthz
+  port: 8080
+  initial_delay_seconds: 5
+ingress:
+  host: pr-${PR_NUMBER}.${BASE_DOMAIN}
+  path: /
+namespace: ${NAMESPACE}        # 由 deployer 替换
+```
 
-## 2. 步骤
+## 2. 可选字段
 
-待填（按 step 列：做什么 / 改哪个文件 / 验收）。
+| 字段 | 说明 |
+|---|---|
+| `env` | 注入到容器的环境变量 |
+| `env_from_secret` | 引用 K8s Secret |
+| `volumes` | 挂载（仅 data-pod 模式） |
+| `resources` | CPU / mem requests / limits |
+| `test_targets` | 覆盖默认测试命令 |
+| `extra_gates` | 加额外 gates 检查 |
 
-## 3. 模板引用
+## 3. 占位符
 
-待填（链 [`../../projects/template/`](../../projects/template/) 对应文件）。
+由 deploy.py 在渲染时替换：
 
-## 4. 实例引用（om-datacenter）
+- `${PR_NUMBER}` — PR 号
+- `${BASE_DOMAIN}` — 预览域名（项目层指定）
+- `${NAMESPACE}` — 目标 namespace
+- `${IMAGE_FULL}` — 完整镜像名
 
-待填（链 [`../../projects/om-datacenter/`](../../projects/om-datacenter/) 对应文件）。
+## 4. 模板
 
-## 5. 常见问题
+- 模板：[`../../projects/template/.preview/service.yaml.tmpl`](../../projects/template/.preview/)
 
-待填。
+## 5. 关联
 
-## 6. 关联文档
-
-- 全景图：[`../architecture.md`](../architecture.md)
-- 通用机制：[`../generic-layer/`](../generic-layer/)
+- 部署器：[`../generic-layer/deployer.md`](../generic-layer/deployer.md)
+- 部署模式选择：同上

@@ -1,39 +1,33 @@
-# 阶段 2 — Maintainer 评 /accepts 门禁
+# 阶段 2 — 需求受理
 
-> 本阶段描述需求审核：maintainer 评 `/accepts` + 打 accepted 标签的标准、审核责任人、ROI / 优先级评估，以及 accepted 后系统如何自动贴菜单评论。
+> maintainer 在阶段 1 的 issue 上点 `/accepts`，正式认领该 issue。
 
-## 1. 谁做什么 / 系统做什么
+## 1. 谁触发
 
-待填：人触发什么（评论 / 标签 / push 等），AI / workflow / runner 自动做什么。
+项目 maintainer（白名单见项目 `projects/<project>/README.md` 的「白名单」段）。
 
-## 2. 触发与 runner
+## 2. 做什么
 
-| 项 | 值 |
-|---|---|
-| 触发条件 | 待填 |
-| Workflow | 待填（指向 `../../projects/template/.github/workflows/` 模板）|
-| Runner | 待填（指向 `../generic-layer/runners.md`）|
-| Timeout | 待填 |
+- 在 issue 评论 `/accepts`
+- 机器人自动给 issue 打 `accepted` 标签
+- 机器人自动指派 maintainer 为 issue 的 assignee
 
-## 3. 步骤详表
+## 3. /accepts 协议
 
-| # | 步骤 | 在哪跑 | 脚本 | Secret | 规范 | 项目文档 | 回显 |
-|---|---|---|---|---|---|---|---|
-| 1 | 待填 | | | | | | |
+- 必须由 maintainer 评，他人评无效
+- 评 `/accepts` 后才允许后续 `[<服务名>需求...]` 触发词生效
+- 已 accept 的 issue 可被任意 maintainer 转交（再次评 `/accepts` 即自动重新指派）
 
-## 4. Secret 列表
+## 4. 不允许
 
-待填：本阶段用到的 secret + 用途 + 来源（链 `../generic-layer/credentials-storage.md`）。
+- 用户自己评 `/accepts`（机器人无视）
+- 在 `accepted` 标签未打的 issue 上触发后续流程
 
-## 5. 评论模板
+## 5. 下一步
 
-待填（链 `../pr-comment-protocol.md` 对应小节）。
+- 评 `[<服务名>需求]` → 进入阶段 3（机器人贴菜单）
 
-## 6. 完成判据 / 下一步
+## 6. 关联
 
-待填。
-
-## 7. 关联文档
-
-- 全景图：[`../architecture.md`](../architecture.md)
-- 项目接线：[`../project-layer/`](../project-layer/)
+- 团队 issue 工作流：[`../../teams/context/team/issue-workflow-guide.md`](../../teams/context/team/issue-workflow-guide.md)
+- 阶段 3：[`stage-3-trigger-menu.md`](stage-3-trigger-menu.md)

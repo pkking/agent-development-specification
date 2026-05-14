@@ -1,7 +1,41 @@
-# 占位 — k8s/deployment.yaml
-
-> 本文件是 om-datacenter 项目实例的占位文件。
-> 实际内容将从 `opensourceways/om-datacenter` 仓对应文件拷贝改写到此。
->
-> 对应模板：[`../template/k8s/deployment.yaml.tmpl`](../template/k8s/deployment.yaml.tmpl) 或 [`../template/deployment.yaml.tmpl`](../template/deployment.yaml.tmpl)
-> 关联文档：[`../../pipeline/architecture.md`](../../pipeline/architecture.md)
+# om-datacenter K8s Deployment
+# 注意：这里给的是「项目层模板」级 example，实际生产 yaml 在各 dev 子仓的 .preview/ 与 k8s/。
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: om-datacenter
+  namespace: ai-test
+  labels:
+    app: om-datacenter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: om-datacenter
+  template:
+    metadata:
+      labels:
+        app: om-datacenter
+    spec:
+      containers:
+        - name: api
+          image: <registry>/om-datacenter/apimagic:<tag>
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: om-datacenter-config
+            - secretRef:
+                name: om-datacenter-secret
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 2000m
+              memory: 2Gi

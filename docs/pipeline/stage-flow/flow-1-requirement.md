@@ -1,39 +1,44 @@
-# 流程 1 — [<服务名>需求分析] AI 写需求文档
+# 流程 1 — 需求分析
 
-> 本流程描述 [<服务名>需求分析] 触发 issue-1-analyze-requirement.yml：按 issue 标题分 ra-doc / user-view 两模式，ra-doc 模式 AI 按 backlog 模板写需求分析说明书并提 PR 到 backlog 仓。
+> 评论 `[<服务名>需求分析]` 触发。AI 自动写需求文档 PR。
 
-## 1. 谁做什么 / 系统做什么
-
-待填：人触发什么（评论 / 标签 / push 等），AI / workflow / runner 自动做什么。
-
-## 2. 触发与 runner
+## 1. 触发
 
 | 项 | 值 |
 |---|---|
-| 触发条件 | 待填 |
-| Workflow | 待填（指向 `../../projects/template/.github/workflows/` 模板）|
-| Runner | 待填（指向 `../generic-layer/runners.md`）|
-| Timeout | 待填 |
+| 入口评论 | `[<服务名>需求分析]` |
+| 跑在哪 | ai-dev-runner |
+| 加载 prompt | [`../../teams/prompts/requirement-analysis.md`](../../teams/prompts/requirement-analysis.md) + 项目层覆盖（如有） |
+| 工具 | Claude CLI + gh |
 
-## 3. 步骤详表
+## 2. 步骤
 
-| # | 步骤 | 在哪跑 | 脚本 | Secret | 规范 | 项目文档 | 回显 |
-|---|---|---|---|---|---|---|---|
-| 1 | 待填 | | | | | | |
+1. 拉取 issue 全文（包括评论）
+2. 拉取当前服务现状（`docs/architecture.md` 等）
+3. design agent 起草需求文档：背景 → 范围 → 用户场景 → 功能清单 → 非功能 → 接口 → 依赖与风险 → 验收 → 不做什么
+4. 在 backlog 仓开 PR，文件名 `<issue-id>-<short-slug>-requirement.md`
+5. 评论 issue：「需求 PR 已出 → `<pr-url>`」
 
-## 4. Secret 列表
+## 3. 必产出
 
-待填：本阶段用到的 secret + 用途 + 来源（链 `../generic-layer/credentials-storage.md`）。
+按 [`../../teams/templates/Requirement Analysis/`](../../teams/templates/Requirement%20Analysis/) 模板。
 
-## 5. 评论模板
+## 4. 评审
 
-待填（链 `../pr-comment-protocol.md` 对应小节）。
+- 需求 PR 由项目 owner + 业务方共同评审
+- 评审通过 + 合入后才能进流程 2
 
-## 6. 完成判据 / 下一步
+## 5. 失败处理
 
-待填。
+- AI 起草不符合模板 → 在 PR 上评 review，AI 再迭代（一轮）
+- 仍不符 → 标 `needs-human`，maintainer 接手
 
-## 7. 关联文档
+## 6. 下一步
 
-- 全景图：[`../architecture.md`](../architecture.md)
-- 项目接线：[`../project-layer/`](../project-layer/)
+- 流程 1 PR 合入后，评 `[<服务名>需求实现]` → 进入流程 2
+
+## 7. 关联
+
+- 团队 prompt：[`../../teams/prompts/requirement-analysis.md`](../../teams/prompts/requirement-analysis.md)
+- 全景：[`../architecture.md`](../architecture.md)
+- 流程 2：[`flow-2-implementation.md`](flow-2-implementation.md)

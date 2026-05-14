@@ -1,17 +1,65 @@
-# Runners — 2 类自托管 GitHub Actions Runner
+# Generic Layer — Runners
 
-> 本文件描述流水线用到的 2 类 self-hosted runner（ai-dev-runner / k8s-deployer）：部署位置、标签、职责、镜像构建、RBAC、运维与排障。
+> 通用流水线运行环境。代码与镜像见 [`../../src/runner/`](../../src/runner/)。
 
-## 1. 概述
+## 1. 两类 runner
 
-待填：本文件描述的组件 / 机制是什么，在 [`../architecture.md`](../architecture.md) 哪一步用到。
+| Runner | 用途 | 跑哪些 workflow | 代码 |
+|---|---|---|---|
+| `ai-dev-runner` | AI 多 agent 对抗实现 + 起测试编排 | 流程 1 / 2 / 3 主体 | [`../../src/runner/ai-dev-runner/`](../../src/runner/ai-dev-runner/) |
+| `k8s-deployer` | 把构建产物推到 K8s 预览 / beta namespace | 流程 2 起预览 + 流程 3 上 beta | [`../../src/runner/k8s-deployer/`](../../src/runner/k8s-deployer/) |
 
-## 2. 详细设计
+## 2. ai-dev-runner
 
-待填：组件结构 / 内部交互 / 配置 / 失败模式。
+### 2.1 容器构成
 
-## 3. 关联文档
+- 基础镜像：Ubuntu 24.04
+- 预装：`git`、`gh`、`node`、`python3`、`docker`、`kubectl`、`helm`、`jq`、`yq`、Claude CLI
+- Dockerfile：[`../../src/runner/ai-dev-runner/Dockerfile`](../../src/runner/ai-dev-runner/Dockerfile)
+- 入口脚本：[`../../src/runner/ai-dev-runner/entrypoint.sh`](../../src/runner/ai-dev-runner/entrypoint.sh)
+- 注册 self-hosted runner：[`../../src/runner/ai-dev-runner/start-runner.sh`](../../src/runner/ai-dev-runner/start-runner.sh)
 
-- 全景图：[`../architecture.md`](../architecture.md)
-- 项目接线规范：[`../project-layer/`](../project-layer/)
-- 公共代码：[`../../src/`](../../src/)
+### 2.2 标签
+
+- `[self-hosted, ai-dev]` — 通用
+- `[self-hosted, ai-dev, gpu]` — 大模型推理本地化（非默认）
+
+### 2.3 注入的 secret（K8s 部署形态）
+
+通过 `configMapRef` + `secretRef` 注入：
+
+- `ANTHROPIC_API_KEY` / `ANTHROPIC_BASE_URL` / `ANTHROPIC_MODEL`
+- `GITHUB_TOKEN`（带 `workflow` scope）
+- `GITCODE_TOKEN`（用于 GitCode 镜像）
+- `KUBECONFIG`（用于触发部署器）
+- 详见 [`credentials-storage.md`](credentials-storage.md)
+
+### 2.4 部署
+
+- `deployment.yaml`：[`../../src/runner/ai-dev-runner/deployment.yaml`](../../src/runner/ai-dev-runner/deployment.yaml)
+- RBAC：[`../../src/runner/ai-dev-runner/rbac.yaml`](../../src/runner/ai-dev-runner/rbac.yaml)
+- 镜像构建脚本：[`../../src/runner/ai-dev-runner/build-and-push.sh`](../../src/runner/ai-dev-runner/build-and-push.sh)
+
+## 3. k8s-deployer
+
+### 3.1 角色
+
+接收来自 ai-dev-runner 的 deploy 请求（通过 `repository_dispatch` 或直接 RPC），调用 [`deployer.md`](deployer.md) 的 `deploy.py` 把镜像推到目标 namespace + 起预览 Ingress。
+
+### 3.2 容器构成
+
+- 同样 Ubuntu 24.04
+- 预装：`kubectl`、`helm`、`nginx-ingress` controller 客户端
+- Dockerfile：[`../../src/runner/k8s-deployer/Dockerfile`](../../src/runner/k8s-deployer/Dockerfile)
+
+### 3.3 部署
+
+- `deployment.yaml`：[`../../src/runner/k8s-deployer/deployment.yaml`](../../src/runner/k8s-deployer/deployment.yaml)
+- RBAC：[`../../src/runner/k8s-deployer/rbac.yaml`](../../src/runner/k8s-deployer/rbac.yaml)（需具备目标 namespace 的 deploy / svc / ingress create 权限）
+
+## 4. 关联
+
+- 编排：[`orchestrator.md`](orchestrator.md)
+- 部署器：[`deployer.md`](deployer.md)
+- 凭据存储：[`credentials-storage.md`](credentials-storage.md)
+- 全景：[`../architecture.md`](../architecture.md)

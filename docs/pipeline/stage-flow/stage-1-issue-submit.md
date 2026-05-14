@@ -1,39 +1,35 @@
-# 阶段 1 — 在 backlog 仓提 issue
+# 阶段 1 — Issue 提交
 
-> 本阶段描述人如何在 backlog 仓提交需求 / 任务 / 缺陷 issue，包括 issue 模板选择、关键字（[需求]/[任务]/[缺陷]）的作用、标签体系。
+> 在 backlog 仓提一条 issue，作为整条流水线的入口。
 
-## 1. 谁做什么 / 系统做什么
+## 1. 谁触发
 
-待填：人触发什么（评论 / 标签 / push 等），AI / workflow / runner 自动做什么。
+业务方 / 内部 PM / 一线运维 / 任何团队成员。
 
-## 2. 触发与 runner
+## 2. 做什么
 
-| 项 | 值 |
+| 步骤 | 操作 |
 |---|---|
-| 触发条件 | 待填 |
-| Workflow | 待填（指向 `../../projects/template/.github/workflows/` 模板）|
-| Runner | 待填（指向 `../generic-layer/runners.md`）|
-| Timeout | 待填 |
+| 1 | 进入 `opensourceways/backlog` 仓的 Issues 页面 |
+| 2 | 点 New Issue，选合适模板（Feature Request / Bug Report） |
+| 3 | 标题：`[<服务名>] <一句话场景描述>` |
+| 4 | 正文：背景 + 现状 + 期望；按 issue 模板填字段 |
+| 5 | 不打 `accepted` 标签（由 maintainer 在阶段 2 打） |
 
-## 3. 步骤详表
+## 3. 团队 issue 工作流
 
-| # | 步骤 | 在哪跑 | 脚本 | Secret | 规范 | 项目文档 | 回显 |
-|---|---|---|---|---|---|---|---|
-| 1 | 待填 | | | | | | |
+详尽规则与字段示例：[`../../teams/context/team/issue-workflow-guide.md`](../../teams/context/team/issue-workflow-guide.md)。
 
-## 4. Secret 列表
+## 4. 不允许
 
-待填：本阶段用到的 secret + 用途 + 来源（链 `../generic-layer/credentials-storage.md`）。
+- 在 issue 正文贴真实凭据（即便是测试环境的）
+- 直接在 dev 仓提需求 issue（dev 仓只放 PR）
 
-## 5. 评论模板
+## 5. 下一步
 
-待填（链 `../pr-comment-protocol.md` 对应小节）。
+- maintainer 在 issue 上评 `/accepts` → 进入阶段 2
 
-## 6. 完成判据 / 下一步
+## 6. 关联
 
-待填。
-
-## 7. 关联文档
-
-- 全景图：[`../architecture.md`](../architecture.md)
-- 项目接线：[`../project-layer/`](../project-layer/)
+- 阶段 2：[`stage-2-acceptance.md`](stage-2-acceptance.md)
+- 全景：[`../architecture.md`](../architecture.md)

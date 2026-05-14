@@ -1,14 +1,27 @@
-# 项目测试策略
+# <<PROJECT_DISPLAY_NAME>> — 测试策略
 
-> **本文件是模板**，复制到项目仓后按 [`../ONBOARDING-CHECKLIST.md`](../ONBOARDING-CHECKLIST.md) 替换占位符。
+> 项目层测试策略，与团队 [`../../../teams/standards/testing.md`](../../../teams/standards/testing.md) 对齐。
+> 详细用例策略模板：[`../../../teams/templates/Test/#1 Test Strategy.md`](../../../teams/templates/Test/%231%20Test%20Strategy.md)
 
-## 待填占位符
+## 1. 分层范围
 
-（无）
+待填，每层用例数量 + 跑在哪 + 时长上限。
 
-## 内容大纲
+## 2. 覆盖率门槛
 
-- UT 覆盖率要求
-- 功能 / 集成测试用例库
-- 前端 Playwright 场景清单
-- 接口契约测试约定
+- 行覆盖率：≥ 60%（团队基线）；本项目目标 待填
+- 关键路径分支覆盖率：≥ 80%
+
+## 3. 测试环境
+
+- smoke / UT / contract → ai-dev-runner 容器
+- integration / e2e → 预览 namespace `<<NAMESPACE>>`
+
+## 4. 用例索引
+
+待填：项目核心黄金链路用例清单。
+
+## 5. 关联
+
+- 团队测试规范：[`../../../teams/standards/testing.md`](../../../teams/standards/testing.md)
+- tester agent prompt：[`../../../teams/prompts/test-strategy.md`](../../../teams/prompts/test-strategy.md)

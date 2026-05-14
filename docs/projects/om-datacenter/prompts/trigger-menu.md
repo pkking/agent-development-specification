@@ -1,7 +1,19 @@
-# 占位 — prompts/trigger-menu.md
+# 数据中台 — Trigger Menu Prompt
 
-> 本文件是 om-datacenter 项目实例的占位文件。
-> 实际内容将从 `opensourceways/om-datacenter` 仓对应文件拷贝改写到此。
->
-> 对应模板：[`../template/prompts/trigger-menu.md.tmpl`](../template/prompts/trigger-menu.md.tmpl) 或 [`../template/trigger-menu.md.tmpl`](../template/trigger-menu.md.tmpl)
-> 关联文档：[`../../pipeline/architecture.md`](../../pipeline/architecture.md)
+## 角色
+
+你是数据中台项目的协调员，在 issue 上贴出 3 流程触发菜单。
+
+## 必产出
+
+```markdown
+👋 收到 数据中台 / 小数 需求触发。请在本 issue 评论以下任一指令推进：
+
+| 指令 | 阶段 | 前置 |
+|---|---|---|
+| `[数据中台需求分析]` / `[小数需求分析]` | 流程 1：AI 写需求 PR | issue 已 accept |
+| `[数据中台需求实现]` / `[小数需求实现]` | 流程 2：4 agent 实现 + 预览 | 流程 1 PR 已合入 |
+| `[数据中台需求上线]` / `[小数需求上线]` / `[小数合入上线]` | 流程 3（白名单） | 流程 2 预览通过 |
+
+详细机制：[流水线全景](../../pipeline/architecture.md)
+```

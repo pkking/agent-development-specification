@@ -1,16 +1,38 @@
-# 预览部署服务定义
+# .preview/service.yaml — PR 预览部署唯一配置入口
+# 复制到 <<PROJECT_NAME>>/.preview/service.yaml；规范见 ../../pipeline/project-layer/preview-service-yaml-spec.md
 
-> **本文件是模板**，复制到项目仓后按 [`../ONBOARDING-CHECKLIST.md`](../ONBOARDING-CHECKLIST.md) 替换占位符。
+project: <<PROJECT_NAME>>
+service: <<PROJECT_NAME>>
+deploy_mode: <<DEPLOY_MODE>>   # dev-pod | data-pod | shared | none
 
-## 待填占位符
+image:
+  registry: <registry-host>
+  repo: <project-image-repo>
+  tag: ${PR_NUMBER}
 
-- `<<DEPLOY_MODE>>`
-- `<<PROJECT_NAME>>`
+port: 8080
 
-## 内容大纲
+health_check:
+  path: /healthz
+  port: 8080
+  initial_delay_seconds: 10
+  period_seconds: 10
 
-- mode
-- image
-- ports
-- health_check
-- env
+ingress:
+  host: pr-${PR_NUMBER}.<<BASE_DOMAIN>>
+  path: /
+
+namespace: <<NAMESPACE>>
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+# 可选 — 覆盖默认测试 targets
+# test_targets:
+#   unit: "npm test"
+#   integration: "npm run test:integration"

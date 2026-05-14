@@ -1,7 +1,7 @@
 # 项目实例 — om-datacenter（数据中台）
 
 > 第一个按 [`../template/`](../template/) 接入「Issue → 发布」端到端流水线的项目实例。
-> 真实项目仓在 [`opensourceways/om-datacenter`](https://github.com/opensourceways/om-datacenter)（git submodule 套 5 个 dev 子仓）。
+> 真实项目仓为 `opensourceways/om-datacenter`（git submodule 套 5 个 dev 子仓），本目录保存其接入流水线的所有产物副本。
 
 ## 项目档位
 

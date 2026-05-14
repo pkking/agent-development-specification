@@ -1,7 +1,13 @@
-# 占位 — k8s/service.yaml
-
-> 本文件是 om-datacenter 项目实例的占位文件。
-> 实际内容将从 `opensourceways/om-datacenter` 仓对应文件拷贝改写到此。
->
-> 对应模板：[`../template/k8s/service.yaml.tmpl`](../template/k8s/service.yaml.tmpl) 或 [`../template/service.yaml.tmpl`](../template/service.yaml.tmpl)
-> 关联文档：[`../../pipeline/architecture.md`](../../pipeline/architecture.md)
+apiVersion: v1
+kind: Service
+metadata:
+  name: om-datacenter
+  namespace: ai-test
+spec:
+  selector:
+    app: om-datacenter
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+  type: ClusterIP

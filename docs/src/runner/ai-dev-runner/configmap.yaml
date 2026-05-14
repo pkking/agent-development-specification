@@ -1,7 +1,10 @@
-# Runner 环境配置(非敏感)
-# 待填
-
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: <<CM_NAME>>
+  name: ai-dev-runner-config
+  namespace: ci-runners
+data:
+  GH_OWNER: "<your-org>"
+  GH_REPO: "<your-repo>"
+  ANTHROPIC_BASE_URL: "https://api.anthropic.com"
+  ANTHROPIC_MODEL: "claude-opus-4-7"

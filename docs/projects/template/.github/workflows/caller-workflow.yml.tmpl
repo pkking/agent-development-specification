@@ -1,13 +1,60 @@
-# Caller Workflow（dispatch 通用 pipeline）
+# Caller workflow — 把 issue_comment 转给通用层
+# 复制到 <<PROJECT_NAME>>/.github/workflows/caller-workflow.yml
 
-> **本文件是模板**，复制到项目仓后按 [`../ONBOARDING-CHECKLIST.md`](../ONBOARDING-CHECKLIST.md) 替换占位符。
+name: <<PROJECT_NAME>> Caller Workflow
 
-## 待填占位符
+on:
+  issue_comment:
+    types: [created]
 
-- `<<TRIGGER_PREFIX>>`
+permissions:
+  issues: write
+  contents: read
 
-## 内容大纲
+jobs:
+  parse-and-dispatch:
+    if: github.event.issue.state == 'open'
+    runs-on: ubuntu-latest
+    outputs:
+      event_type: ${{ steps.parse.outputs.event_type }}
+    steps:
+      - name: Parse trigger
+        id: parse
+        env:
+          COMMENT: ${{ github.event.comment.body }}
+        run: |
+          set -euo pipefail
+          case "$COMMENT" in
+            *"[<<TRIGGER_PREFIX>>需求]"*)         echo "event_type=trigger-menu"        >> "$GITHUB_OUTPUT" ;;
+            *"[<<TRIGGER_PREFIX>>需求分析]"*)     echo "event_type=requirement-analyze" >> "$GITHUB_OUTPUT" ;;
+            *"[<<TRIGGER_PREFIX>>需求实现]"*)     echo "event_type=implement-preview"   >> "$GITHUB_OUTPUT" ;;
+            *"[<<TRIGGER_PREFIX>>需求上线]"*)     echo "event_type=release-deploy"      >> "$GITHUB_OUTPUT" ;;
+            *)                                    echo "event_type="                    >> "$GITHUB_OUTPUT" ;;
+          esac
 
-- on: issue_comment
-- if: 评论含 [<<TRIGGER_PREFIX>>需求 *]
-- repository_dispatch event_type
+      - name: Whitelist check (release only)
+        if: steps.parse.outputs.event_type == 'release-deploy'
+        env:
+          COMMENTER: ${{ github.event.comment.user.login }}
+          WHITELIST: "<<MAINTAINER_WHITELIST>>"
+        run: |
+          set -euo pipefail
+          if ! grep -qw "$COMMENTER" <<< "$WHITELIST"; then
+            echo "::error::$COMMENTER not in maintainer whitelist"
+            exit 1
+          fi
+
+      - name: Dispatch to generic layer
+        if: steps.parse.outputs.event_type != ''
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.DISPATCH_TOKEN }}
+          repository: <generic-layer-org>/<generic-layer-repo>
+          event-type: ${{ steps.parse.outputs.event_type }}
+          client-payload: |
+            {
+              "project": "<<PROJECT_NAME>>",
+              "issue_number": "${{ github.event.issue.number }}",
+              "comment_id": "${{ github.event.comment.id }}",
+              "commenter": "${{ github.event.comment.user.login }}"
+            }

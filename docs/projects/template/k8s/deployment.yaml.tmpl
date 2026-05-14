@@ -1,13 +1,46 @@
-# K8s deployment.yaml
-
-> **本文件是模板**，复制到项目仓后按 [`../ONBOARDING-CHECKLIST.md`](../ONBOARDING-CHECKLIST.md) 替换占位符。
-
-## 待填占位符
-
-- `<<PROJECT_NAME>>`
-- `<<NAMESPACE>>`
-
-## 内容大纲
-
-- apiVersion / kind / metadata
-- spec
+# K8s Deployment 模板 — <<PROJECT_NAME>>
+# 复制到 <<PROJECT_NAME>>/k8s/deployment.yaml；占位符按 ONBOARDING-CHECKLIST.md 替换。
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: <<PROJECT_NAME>>
+  namespace: <<NAMESPACE>>
+  labels:
+    app: <<PROJECT_NAME>>
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: <<PROJECT_NAME>>
+  template:
+    metadata:
+      labels:
+        app: <<PROJECT_NAME>>
+    spec:
+      containers:
+        - name: <<PROJECT_NAME>>
+          image: <registry>/<repo>:<tag>
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: <<PROJECT_NAME>>-config
+            - secretRef:
+                name: <<PROJECT_NAME>>-secret
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 30
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi

@@ -1,7 +1,9 @@
-# 占位 — k8s/configmap.yaml
-
-> 本文件是 om-datacenter 项目实例的占位文件。
-> 实际内容将从 `opensourceways/om-datacenter` 仓对应文件拷贝改写到此。
->
-> 对应模板：[`../template/k8s/configmap.yaml.tmpl`](../template/k8s/configmap.yaml.tmpl) 或 [`../template/configmap.yaml.tmpl`](../template/configmap.yaml.tmpl)
-> 关联文档：[`../../pipeline/architecture.md`](../../pipeline/architecture.md)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: om-datacenter-config
+  namespace: ai-test
+data:
+  APP_ENV: "preview"
+  LOG_LEVEL: "info"
+  BASE_DOMAIN: "ai.test.osinfra.cn"

@@ -1,17 +1,37 @@
-# Tests — 分层测试机制
+# Generic Layer — 测试编排
 
-> 本文件描述分层测试 `tests/run_layered.sh` 三层：冒烟（curl localhost）/ vitest UT / 接口契约（PR diff 新增 endpoint 模拟调一遍）+ tester agent 跑 Playwright 场景。
+> 分层测试在流水线中的执行编排。代码：[`../../src/tests/`](../../src/tests/)。
 
-## 1. 概述
+## 1. 分层
 
-待填：本文件描述的组件 / 机制是什么，在 [`../architecture.md`](../architecture.md) 哪一步用到。
+详见 [`../../teams/standards/testing.md`](../../teams/standards/testing.md) 与 [`../testing-strategy.md`](../testing-strategy.md)。
 
-## 2. 详细设计
+| 层 | 跑哪 | 编排脚本 |
+|---|---|---|
+| smoke | ai-dev-runner 容器内 | `run_layered.sh smoke` |
+| unit (UT) | 同上 | `run_layered.sh unit` |
+| interface contract | 同上 | `run_layered.sh contract` |
+| integration | 预览 namespace | `run_layered.sh integration` |
+| e2e | 预览 namespace | `run_layered.sh e2e` |
 
-待填：组件结构 / 内部交互 / 配置 / 失败模式。
+## 2. run_layered.sh
 
-## 3. 关联文档
+入参 `<layer>` 决定要跑哪层；执行项目仓 `package.json` / `Makefile` / `pyproject.toml` 中对应 target，再聚合产出 JUnit XML + coverage report。
 
-- 全景图：[`../architecture.md`](../architecture.md)
-- 项目接线规范：[`../project-layer/`](../project-layer/)
-- 公共代码：[`../../src/`](../../src/)
+代码：[`../../src/tests/run_layered.sh`](../../src/tests/run_layered.sh)
+
+## 3. 输出
+
+- JUnit XML → 上传到 PR 评论
+- 覆盖率报告 → 与 [`../../teams/security-gates/UT-coverage.md`](../../teams/security-gates/UT-coverage.md) 对照
+- 失败用例 → 截图 / 日志归档到 PR artifacts
+
+## 4. 项目层覆盖
+
+项目可在 `.preview/service.yaml` 中声明 `test_targets`，覆盖默认的 `npm test` / `pytest`。
+
+## 5. 关联
+
+- 团队测试规范：[`../../teams/standards/testing.md`](../../teams/standards/testing.md)
+- 测试经验：[`../../teams/context/experience/测试策略编写经验.md`](../../teams/context/experience/测试策略编写经验.md)
+- tester agent prompt：[`../../teams/prompts/test-strategy.md`](../../teams/prompts/test-strategy.md)

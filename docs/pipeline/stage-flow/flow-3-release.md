@@ -1,39 +1,40 @@
-# 流程 3 — [<服务名>需求上线] 合入 + 上 beta + 清理
+# 流程 3 — 合入 + 上线
 
-> 本流程描述 [<服务名>需求上线] 触发 issue-3-merge-and-deploy.yml：白名单权限校验、找各 dev 仓 head=<BRANCH> PR、squash merge、deploy.py promote --env beta 触发 Jenkins、deploy.py cleanup 删预览资源。
+> maintainer 评 `[<服务名>需求上线]` 触发（白名单）。合 PR + 部署 beta + 清理预览。
 
-## 1. 谁做什么 / 系统做什么
-
-待填：人触发什么（评论 / 标签 / push 等），AI / workflow / runner 自动做什么。
-
-## 2. 触发与 runner
+## 1. 触发
 
 | 项 | 值 |
 |---|---|
-| 触发条件 | 待填 |
-| Workflow | 待填（指向 `../../projects/template/.github/workflows/` 模板）|
-| Runner | 待填（指向 `../generic-layer/runners.md`）|
-| Timeout | 待填 |
+| 入口评论 | `[<服务名>需求上线]` |
+| 谁可评 | maintainer 白名单（项目层声明） |
+| 前置 | 流程 2 预览已起、PR 评审通过 |
+| 跑在哪 | ai-dev-runner + k8s-deployer |
 
-## 3. 步骤详表
+## 2. 步骤
 
-| # | 步骤 | 在哪跑 | 脚本 | Secret | 规范 | 项目文档 | 回显 |
-|---|---|---|---|---|---|---|---|
-| 1 | 待填 | | | | | | |
+1. 校验评论人在白名单（不在则拒绝并评论原因）
+2. 合所有相关 PR（backlog 仓需求 PR + dev 仓实现 PR）
+3. 触发部署到 beta namespace
+4. 清理预览资源（按 deployer cleanup 规则）
+5. 生成 release notes 片段（[`../../teams/prompts/release-notes.md`](../../teams/prompts/release-notes.md)）
+6. 评论 issue：「已上线 beta → 灰度指引」
 
-## 4. Secret 列表
+## 3. 灰度
 
-待填：本阶段用到的 secret + 用途 + 来源（链 `../generic-layer/credentials-storage.md`）。
+- beta 部署后 24 h 值守期
+- 任意金指标恶化 → 自动回滚（详见 [`../../teams/standards/release.md`](../../teams/standards/release.md)）
+- 通过 24 h → 项目 release manager 手工触发生产灰度（不在自动流水线内）
 
-## 5. 评论模板
+## 4. 失败处理
 
-待填（链 `../pr-comment-protocol.md` 对应小节）。
+- 合 PR 冲突 → 评论 PR + 标 `needs-rebase`
+- beta 部署失败 → 不合 PR；评论原因
+- 白名单校验失败 → 评论拒绝原因；不执行任何 merge
 
-## 6. 完成判据 / 下一步
+## 5. 关联
 
-待填。
-
-## 7. 关联文档
-
-- 全景图：[`../architecture.md`](../architecture.md)
-- 项目接线：[`../project-layer/`](../project-layer/)
+- 部署：[`../generic-layer/deployer.md`](../generic-layer/deployer.md)
+- 团队发布规范：[`../../teams/standards/release.md`](../../teams/standards/release.md)
+- Release notes：[`../../teams/prompts/release-notes.md`](../../teams/prompts/release-notes.md)
+- 发布流程详细：[`../release-process.md`](../release-process.md)

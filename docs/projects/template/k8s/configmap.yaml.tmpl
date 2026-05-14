@@ -1,13 +1,10 @@
-# K8s configmap.yaml
-
-> **本文件是模板**，复制到项目仓后按 [`../ONBOARDING-CHECKLIST.md`](../ONBOARDING-CHECKLIST.md) 替换占位符。
-
-## 待填占位符
-
-- `<<PROJECT_NAME>>`
-- `<<NAMESPACE>>`
-
-## 内容大纲
-
-- apiVersion / kind / metadata
-- spec
+# K8s ConfigMap 模板 — <<PROJECT_NAME>>
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: <<PROJECT_NAME>>-config
+  namespace: <<NAMESPACE>>
+data:
+  APP_ENV: "preview"
+  LOG_LEVEL: "info"
+  # 在此添加项目所需非敏感配置

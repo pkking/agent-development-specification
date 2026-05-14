@@ -1,12 +1,50 @@
-# 通用 AI 开发 runner K8s Deployment
-# 待填: apiVersion / kind / metadata / spec
-# 关联: ../../pipeline/generic-layer/runners.md
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ai-dev-runner
-  namespace: <<NAMESPACE>>
+  namespace: ci-runners
 spec:
-  replicas: 1
-  # 待填
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ai-dev-runner
+  template:
+    metadata:
+      labels:
+        app: ai-dev-runner
+    spec:
+      serviceAccountName: ai-dev-runner
+      containers:
+        - name: runner
+          image: <registry>/ai-dev-runner:latest
+          imagePullPolicy: Always
+          env:
+            - name: GH_OWNER
+              valueFrom:
+                configMapKeyRef:
+                  name: ai-dev-runner-config
+                  key: GH_OWNER
+            - name: GH_REPO
+              valueFrom:
+                configMapKeyRef:
+                  name: ai-dev-runner-config
+                  key: GH_REPO
+            - name: RUNNER_LABELS
+              value: "self-hosted,ai-dev"
+          envFrom:
+            - secretRef:
+                name: ai-dev-runner-secrets
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 4000m
+              memory: 8Gi
+          volumeMounts:
+            - name: docker-sock
+              mountPath: /var/run/docker.sock
+      volumes:
+        - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock

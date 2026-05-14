@@ -1,28 +1,41 @@
-# 项目 skills/ 目录规范
+# 项目层 skills 规范
 
-> 本文件规定项目 skills/ 下的自定义 skill（被 AI agent 在阶段 ① design 路由阶段引用）必含字段：触发关键字、适用场景、执行步骤、产物。
+> 项目仓 `skills/` 目录可放项目专属 skill，作为团队 prompt 之外的额外能力。
 
-## 1. 适用场景 / 前置条件
+## 1. 何时需要 skill
 
-待填。
+- 项目专属的频繁操作（如「给 om-datacenter 新增一个社区」「给 X 服务接 OAuth」）
+- 操作步骤超过 3 步、且会被反复触发
+- 仅团队 prompt + 项目 CLAUDE.md 不足以覆盖
 
-## 2. 步骤
+## 2. 文件结构
 
-待填（按 step 列：做什么 / 改哪个文件 / 验收）。
+每个 skill 一个独立目录：
 
-## 3. 模板引用
+```
+projects/<project>/skills/
+├─ <skill-name>/
+│  ├─ SKILL.md      ← skill 描述 + 触发关键词 + 步骤
+│  └─ <补充文件>     ← 可选
+```
 
-待填（链 [`../../projects/template/`](../../projects/template/) 对应文件）。
+## 3. SKILL.md 必含段
 
-## 4. 实例引用（om-datacenter）
+| 段 | 内容 |
+|---|---|
+| 名称 | 与目录同名 |
+| 触发词 | AI 何时该用本 skill |
+| 步骤 | 编号步骤，每步可执行 |
+| 输入 | 必备入参 |
+| 输出 | 期望产出 |
+| 关联 | 团队规范 / 项目文档 / 其他 skill |
 
-待填（链 [`../../projects/om-datacenter/`](../../projects/om-datacenter/) 对应文件）。
+## 4. 模板
 
-## 5. 常见问题
+- 模板：[`../../projects/template/skills/skill-name.md.tmpl`](../../projects/template/skills/)
+- 实例参考：[`../../projects/om-datacenter/skills/`](../../projects/om-datacenter/skills/)
 
-待填。
+## 5. 不允许
 
-## 6. 关联文档
-
-- 全景图：[`../architecture.md`](../architecture.md)
-- 通用机制：[`../generic-layer/`](../generic-layer/)
+- 在 SKILL.md 里写真实凭据
+- 抄团队规范全文（应链接到 `teams/standards/...`）

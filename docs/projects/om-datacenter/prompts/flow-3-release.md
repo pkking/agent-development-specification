@@ -1,7 +1,14 @@
-# 占位 — prompts/flow-3-release.md
+# 数据中台 — 流程 3 项目化 Prompt
 
-> 本文件是 om-datacenter 项目实例的占位文件。
-> 实际内容将从 `opensourceways/om-datacenter` 仓对应文件拷贝改写到此。
->
-> 对应模板：[`../template/prompts/flow-3-release.md.tmpl`](../template/prompts/flow-3-release.md.tmpl) 或 [`../template/flow-3-release.md.tmpl`](../template/flow-3-release.md.tmpl)
-> 关联文档：[`../../pipeline/architecture.md`](../../pipeline/architecture.md)
+> 团队 prompt [`../../../teams/prompts/release-notes.md`](../../../teams/prompts/release-notes.md) 之后追加加载。
+
+## 项目专属补充
+
+- 白名单（maintainer）：由 issue-3-merge-and-deploy.yml 中的 actor 名单维护，不在本文件落地
+- 上线后通知渠道：内部数据中台 IM 群
+- 灰度策略：沿用团队默认 5% → 25% → 100%
+- 周一 / 周五避免上线（与社区运营节奏冲突）
+
+## 关联
+
+- 团队 prompt：[`../../../teams/prompts/release-notes.md`](../../../teams/prompts/release-notes.md)

@@ -1,12 +1,43 @@
-# K8s 部署 runner K8s Deployment
-# 待填: apiVersion / kind / metadata / spec
-# 关联: ../../pipeline/generic-layer/runners.md
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: k8s-deployer
-  namespace: <<NAMESPACE>>
+  namespace: ci-runners
 spec:
-  replicas: 1
-  # 待填
+  replicas: 2
+  selector:
+    matchLabels:
+      app: k8s-deployer
+  template:
+    metadata:
+      labels:
+        app: k8s-deployer
+    spec:
+      serviceAccountName: k8s-deployer
+      containers:
+        - name: runner
+          image: <registry>/k8s-deployer:latest
+          imagePullPolicy: Always
+          env:
+            - name: KUBECONFIG
+              value: /home/deployer/.kube/config
+          envFrom:
+            - configMapRef:
+                name: k8s-deployer-config
+            - secretRef:
+                name: k8s-deployer-secrets
+          volumeMounts:
+            - name: kubeconfig
+              mountPath: /home/deployer/.kube
+              readOnly: true
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+      volumes:
+        - name: kubeconfig
+          secret:
+            secretName: deployer-kubeconfig

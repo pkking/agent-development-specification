@@ -1,39 +1,54 @@
-# 流程 2 — [<服务名>需求实现] 4 agent 对抗 + 预览
+# 流程 2 — 4 Agent 对抗实现 + 起预览
 
-> 本流程描述 [<服务名>需求实现] 触发 issue-2-implement-and-preview.yml：orchestrate.sh 编排 design/dev/review/tester 4 个 agent 多轮对抗（最多 MAX_FIX_ROUNDS=3），起 nginx Ingress 预览环境，回评 issue 2 条评论。
+> 评论 `[<服务名>需求实现]` 触发。4 个 AI agent 互相对抗，产出可上预览的 PR。
 
-## 1. 谁做什么 / 系统做什么
-
-待填：人触发什么（评论 / 标签 / push 等），AI / workflow / runner 自动做什么。
-
-## 2. 触发与 runner
+## 1. 触发
 
 | 项 | 值 |
 |---|---|
-| 触发条件 | 待填 |
-| Workflow | 待填（指向 `../../projects/template/.github/workflows/` 模板）|
-| Runner | 待填（指向 `../generic-layer/runners.md`）|
-| Timeout | 待填 |
+| 入口评论 | `[<服务名>需求实现]` |
+| 前置 | 流程 1 的需求 PR 必须已合入 |
+| 跑在哪 | ai-dev-runner + k8s-deployer |
+| 主调度 | [`../generic-layer/orchestrator.md`](../generic-layer/orchestrator.md) |
 
-## 3. 步骤详表
+## 2. 4 个 agent
 
-| # | 步骤 | 在哪跑 | 脚本 | Secret | 规范 | 项目文档 | 回显 |
-|---|---|---|---|---|---|---|---|
-| 1 | 待填 | | | | | | |
+详见 [`../generic-layer/agents.md`](../generic-layer/agents.md)：design → dev → review → tester。
 
-## 4. Secret 列表
+## 3. 步骤
 
-待填：本阶段用到的 secret + 用途 + 来源（链 `../generic-layer/credentials-storage.md`）。
+```
+1. 拉取已合入的需求文档
+2. design agent 出架构设计 + 提 PR 到 dev 仓
+3. dev agent 实现 + UT
+4. 跑 4 项确定性门禁（gates.md），不过则修，最多 MAX_FIX_ROUNDS 轮
+5. review agent 评审，提反馈则 dev 再迭代
+6. tester agent 跑分层测试（tests.md）
+7. 调 k8s-deployer 起预览（deployer.md）
+8. 评论 PR：预览 URL + 测试报告 + 覆盖率
+```
 
-## 5. 评论模板
+## 4. 输出
 
-待填（链 `../pr-comment-protocol.md` 对应小节）。
+- dev 仓 PR（含代码 + UT + 文档 + release notes 片段）
+- 预览 URL（独立 ingress 域名）
+- 测试报告（JUnit XML + 覆盖率）
 
-## 6. 完成判据 / 下一步
+## 5. 失败处理
 
-待填。
+- gates 不过且自动修无效 → 标 `needs-human`
+- 部署 readiness 超时 → 标 `deploy-failed`
+- 单 agent 连续报错 → 标 `agent-error`
 
-## 7. 关联文档
+## 6. 下一步
 
-- 全景图：[`../architecture.md`](../architecture.md)
-- 项目接线：[`../project-layer/`](../project-layer/)
+- 评审通过后，maintainer 评 `[<服务名>需求上线]` → 进入流程 3
+
+## 7. 关联
+
+- 编排：[`../generic-layer/orchestrator.md`](../generic-layer/orchestrator.md)
+- 4 agent：[`../generic-layer/agents.md`](../generic-layer/agents.md)
+- 部署：[`../generic-layer/deployer.md`](../generic-layer/deployer.md)
+- 测试：[`../generic-layer/tests.md`](../generic-layer/tests.md)
+- 门禁：[`../generic-layer/gates.md`](../generic-layer/gates.md)
+- 评论协议：[`../pr-comment-protocol.md`](../pr-comment-protocol.md)

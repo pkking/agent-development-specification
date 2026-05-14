@@ -1,13 +1,14 @@
-# K8s service.yaml
-
-> **本文件是模板**，复制到项目仓后按 [`../ONBOARDING-CHECKLIST.md`](../ONBOARDING-CHECKLIST.md) 替换占位符。
-
-## 待填占位符
-
-- `<<PROJECT_NAME>>`
-- `<<NAMESPACE>>`
-
-## 内容大纲
-
-- apiVersion / kind / metadata
-- spec
+# K8s Service 模板 — <<PROJECT_NAME>>
+apiVersion: v1
+kind: Service
+metadata:
+  name: <<PROJECT_NAME>>
+  namespace: <<NAMESPACE>>
+spec:
+  selector:
+    app: <<PROJECT_NAME>>
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+  type: ClusterIP

@@ -101,8 +101,8 @@
 - 项目实例（projects/`<project>`/）由各项目 owner 维护
 - 团队规范（teams/）由团队 maintainer 提案 + 全员评审
 
-## 关联仓库
+## 关联
 
-- 团队需求 / 文档归档 → [`opensourceways/backlog`](https://github.com/opensourceways/backlog)
-- 数据中台项目 → [`opensourceways/om-datacenter`](https://github.com/opensourceways/om-datacenter)
+- 团队需求 / 文档归档相关规范 → [`teams/context/team/issue-workflow-guide.md`](teams/context/team/issue-workflow-guide.md)
+- 数据中台项目实例 → [`projects/om-datacenter/`](projects/om-datacenter/)
 - 团队规范主仓 → 本仓 `spec/` 和 `specification-example/`（平级目录）

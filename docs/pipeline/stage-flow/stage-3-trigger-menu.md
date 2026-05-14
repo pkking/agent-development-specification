@@ -1,39 +1,38 @@
-# 阶段 3 — 评论 [<服务名>需求] 弹菜单
+# 阶段 3 — 触发菜单
 
-> 本阶段描述 [<服务名>需求] 触发机制：backlog 仓 forward workflow 自动调 gh api 给 issue 加菜单评论（列出 3 个后续触发词 + 各自作用）。
+> 在已 accept 的 issue 上评论 `[<服务名>需求]`，机器人自动贴 3 流程触发菜单。
 
-## 1. 谁做什么 / 系统做什么
+## 1. 谁触发
 
-待填：人触发什么（评论 / 标签 / push 等），AI / workflow / runner 自动做什么。
+任意人（评论权限内）。
 
-## 2. 触发与 runner
+## 2. 做什么
 
-| 项 | 值 |
-|---|---|
-| 触发条件 | 待填 |
-| Workflow | 待填（指向 `../../projects/template/.github/workflows/` 模板）|
-| Runner | 待填（指向 `../generic-layer/runners.md`）|
-| Timeout | 待填 |
+```
+人评 [<服务名>需求]
+       ↓
+caller workflow（项目仓） 接到 issue_comment
+       ↓
+机器人在 issue 上回评一条菜单：
+  - 评 [<服务名>需求分析] 触发流程 1
+  - 评 [<服务名>需求实现] 触发流程 2（流程 1 PR 合入后）
+  - 评 [<服务名>需求上线] 触发流程 3（白名单）
+```
 
-## 3. 步骤详表
+## 3. 菜单 prompt
 
-| # | 步骤 | 在哪跑 | 脚本 | Secret | 规范 | 项目文档 | 回显 |
-|---|---|---|---|---|---|---|---|
-| 1 | 待填 | | | | | | |
+由项目层定义：`../../projects/<project>/prompts/trigger-menu.md`。
+模板：[`../../projects/template/prompts/trigger-menu.md.tmpl`](../../projects/template/prompts/)。
 
-## 4. Secret 列表
+## 4. 触发词命名
 
-待填：本阶段用到的 secret + 用途 + 来源（链 `../generic-layer/credentials-storage.md`）。
+项目层 `<<TRIGGER_PREFIX>>` 占位符替换为实际值。如 om-datacenter 用「数据中台」/「小数」双触发。
 
-## 5. 评论模板
+## 5. 下一步
 
-待填（链 `../pr-comment-protocol.md` 对应小节）。
+- 评 `[<服务名>需求分析]` → 进入流程 1
 
-## 6. 完成判据 / 下一步
+## 6. 关联
 
-待填。
-
-## 7. 关联文档
-
-- 全景图：[`../architecture.md`](../architecture.md)
-- 项目接线：[`../project-layer/`](../project-layer/)
+- 流程 1：[`flow-1-requirement.md`](flow-1-requirement.md)
+- 项目层 caller workflow：[`../project-layer/caller-workflow-spec.md`](../project-layer/caller-workflow-spec.md)
