@@ -99,6 +99,29 @@
 
 ---
 
+## 3.5 Runner 内的路径约定（流程 1/2/3 共用）
+
+ai-dev-runner 跑在 K8s pod 里、以非 root 用户 `runner` 运行（见 [`../src/runner/ai-dev-runner/Dockerfile`](../src/runner/ai-dev-runner/Dockerfile)），workflow 步骤里出现的几个路径变量都对应到容器内的实际位置：
+
+| 变量 / 路径 | 实际位置（容器内） | 干啥用 | 出处 |
+|---|---|---|---|
+| `$HOME` | `/home/runner` | runner 用户家目录，`opencode` 的 `auth.json` / `config` 放这里 | Dockerfile `USER runner`、yml `env.HOME` |
+| actions-runner 安装目录 | `/home/runner/actions-runner/` | GitHub Actions runner 自己的代码 + `_work/` 子目录 | Dockerfile `Install GitHub Actions runner` 段 |
+| `$GITHUB_WORKSPACE` | `/home/runner/actions-runner/_work/<repo>/<repo>` | actions-runner 默认 workdir，**`actions/checkout` 把 umbrella 仓拉到这里**；流程 1 / 2 / 3 的所有 inline shell 默认在此跑 | actions-runner `--work _work` 参数 |
+| `$WORKSPACE_DIR`（仅流程 2） | `/workspaces/<handling-repo>/<source-short>-issue-<N>` | per-issue 独立工作区，**挂 PVC**，跨 job 复用；orchestrate.sh 在这里 `git submodule update` 拉 dev 子仓 | yml 的 `Setup opencode env` step（[issue-2 line 97-108](../projects/om-datacenter/.github/workflows/issue-2-implement-and-preview.yml)）|
+| `$WORK_DIR`（agent 内可见） | = `$WORKSPACE_DIR` | dev / tester / review agent 在这里改/读 dev 子仓代码 | orchestrate.sh 内 export |
+| `$TOOLS_DIR`（agent 内可见） | = `$GITHUB_WORKSPACE` | 流水线工具仓（umbrella 自己的 `src/` / `.github/agents/`） | orchestrate.sh 内 export |
+| `/tmp/opencode/` | runner pod tmpfs | agent 间传文件（`issue.txt` / `route.json` / `design.md` / `result.json` / `feedback.md` / `deploy/pr-<N>.json` ...） | 各 agent prompt 约定 |
+
+**为什么要分 `GITHUB_WORKSPACE` 和 `WORKSPACE_DIR`**：
+
+- `$GITHUB_WORKSPACE` 由 GitHub Actions 管，每个 job 起来时 actions-runner 会清理它，**装不下跨 job 持久状态**
+- 流程 2 跑 90 min、要管 5 个 dev 仓的 checkout / submodule，需要重跑时能复用，所以单独搞一个 PVC 挂的 `/workspaces/.../` 路径，按「umbrella 仓 / per-issue」切目录互不打架
+
+**PVC 配置**：见 [`../src/runner/ai-dev-runner/deployment.yaml`](../src/runner/ai-dev-runner/deployment.yaml) 的 `volumeMounts` 段（`/workspaces` 挂 PersistentVolumeClaim）。
+
+---
+
 ## 4. 流程 1：`[<服务名>需求分析]` — AI 写需求文档
 
 **触发**：人在 issue 评论 `[<服务名>需求分析]`。
@@ -120,7 +143,7 @@
 1. **Workflow checkout 项目仓**（om-datacenter 自身，作为工具仓），不拉 submodule
 2. **算路径**：`DOCS_BRANCH=issue-<N>-design-docs`，目标文件路径 `opensourceways/<source-repo-short>/issue_docs/<N>/Requirement Analysis/#<N> Requirement Analysis Specification.md`
 3. **Setup opencode env**（装 LLM 调用器，密钥来自 `OPENCODE_API_KEY`）
-4. **Clone backlog 仓**到 `$GITHUB_WORKSPACE/backlog`，新建（或复用）`DOCS_BRANCH`
+4. **Clone backlog 仓**到 `$GITHUB_WORKSPACE/backlog`（实际路径 `/home/runner/actions-runner/_work/<repo>/<repo>/backlog`，见 §3.5），新建（或复用）`DOCS_BRANCH`
 5. **Fetch issue 全文**（标题 + 正文 + 全部评论）到 `/tmp/opencode/issue.txt`，由 composite action `.github/actions/fetch-issue` 完成
 6. **跑 AI agent 写文档**（核心一步）：
    - 加载 prompt：[`../projects/om-datacenter/.github/agents/requirements-doc.md`](../projects/om-datacenter/.github/agents/requirements-doc.md)
@@ -169,12 +192,14 @@
 
 ### 5.1 入口步骤（yml 里做的事）
 
-1. **Pre-clean workspace**：清 `$GITHUB_WORKSPACE`
+> 路径变量含义见 §3.5「Runner 内的路径约定」。本节里 `$GITHUB_WORKSPACE` = `/home/runner/actions-runner/_work/<repo>/<repo>`；`$WORKSPACE_DIR` = `/workspaces/<umbrella>/<source-short>-issue-<N>`（PVC 挂载）。
+
+1. **Pre-clean workspace**：清 `$GITHUB_WORKSPACE`（GitHub-managed 默认 workdir）
 2. **算名字**：`BRANCH=<source-repo 短名>-issue-<N>`（所有 dev 仓都用它）
-3. **Checkout umbrella（om-datacenter）**：不拉 submodule，要 `fetch-depth: 0`
-4. **Init dev submodules**：从 `.gitmodules` 枚举所有 submodule 路径，逐个 `git submodule update --init`（拉不下来的 dev 仓跳过，agent 后续会处理）
+3. **Checkout umbrella（om-datacenter）**：拉到 `$GITHUB_WORKSPACE`，不拉 submodule，要 `fetch-depth: 0`
+4. **Init dev submodules**：从 `.gitmodules` 枚举所有 submodule 路径，逐个 `git submodule update --init`（落到 `$GITHUB_WORKSPACE/<submodule-path>/`；拉不下来的 dev 仓跳过，agent 后续会处理）
 5. **Configure git**：设置 user/email + token-injected url rewrite
-6. **Setup opencode env**：每 issue 独立工作区 `/workspaces/<handling-repo>/<source-short>-issue-<N>`
+6. **Setup opencode env**：建 PVC 工作区 `$WORKSPACE_DIR=/workspaces/<handling-repo>/<source-short>-issue-<N>`；`opencode` 的 auth 写到 `$HOME/.local/share/opencode/auth.json`（即 `/home/runner/.local/share/opencode/auth.json`）
 7. **Fetch issue 全文**：composite action `fetch-issue` 写到 `/tmp/opencode/issue.txt`
 8. **准备需求文档** → `/tmp/opencode/requirement_analysis.md`：
    - `[需求]` 类：从 backlog 仓拉已合入的 `Requirement Analysis Specification.md`（拉不到 → 报错让人先合 PR）
@@ -185,16 +210,50 @@
 
 脚本（om-datacenter 仓的 `src/orchestrate.sh`，spec 仓对应版本在 [`../src/orchestrator/orchestrate.sh`](../src/orchestrator/orchestrate.sh)）跑最多 `MAX_FIX_ROUNDS=3` 轮以下循环：
 
-| # | Agent | prompt 文件 | 输入 | 输出 |
-|---|---|---|---|---|
-| ① | **design** | [`../projects/om-datacenter/.github/agents/design.md`](../projects/om-datacenter/.github/agents/design.md) | issue.txt + requirement_analysis.md + 项目 CLAUDE.md | `/tmp/opencode/route.json`（路由 + target_repos）+ `/tmp/opencode/design.md`（含可量化验收标准） |
-| ② | **dev** | [`../projects/om-datacenter/.github/agents/dev.md`](../projects/om-datacenter/.github/agents/dev.md) | design.md + route.json | 改各 dev 仓代码 + commit/push `<BRANCH>` + 开 PR + `/tmp/opencode/result.json` + `change_summary.md` |
-| ③ | **deploy**（脚本非 agent） | — | result.json 的 PR 列表 | 各 PR 一个 nginx Ingress 预览 URL；写 `/tmp/opencode/deploy/pr-<N>.json` |
-| ④ | **tester** | [`../projects/om-datacenter/.github/agents/tester.md`](../projects/om-datacenter/.github/agents/tester.md) | design.md 验收标准 + 各 PR 预览 + apimagic_endpoints | `test_report.md`（4 类测试逐项）+ `test_fail.md`（打回清单）+ `test_retro.md` |
-| ⑤ | **review** | [`../projects/om-datacenter/.github/agents/review.md`](../projects/om-datacenter/.github/agents/review.md) | 各 PR diff + gates 结果 | `review_report.md` + `review_fail.md`（打回清单） |
-| feedback | — | — | tester + review 的打回清单 | 合成 `/tmp/opencode/feedback.md` 回给 dev / design 重跑 |
+| # | Agent | prompt 文件 | 必读项目 CLAUDE.md | 输入 | 输出 |
+|---|---|---|---|---|---|
+| ① | **design** | [`../projects/om-datacenter/.github/agents/design.md`](../projects/om-datacenter/.github/agents/design.md) | umbrella [`../projects/om-datacenter/CLAUDE.md`](../projects/om-datacenter/CLAUDE.md) + 各 dev 子仓自己的 `CLAUDE.md`（在 `$WORKSPACE_DIR/<submodule>/CLAUDE.md`） | issue.txt + requirement_analysis.md | `/tmp/opencode/route.json`（路由 + target_repos）+ `/tmp/opencode/design.md`（含可量化验收标准） |
+| ② | **dev** | [`../projects/om-datacenter/.github/agents/dev.md`](../projects/om-datacenter/.github/agents/dev.md) | 同上（umbrella + 各 dev 子仓） | design.md + route.json | 改各 dev 仓代码 + commit/push `<BRANCH>` + 开 PR + `/tmp/opencode/result.json` + `change_summary.md` |
+| ③ | **deploy**（脚本非 agent） | — | — | result.json 的 PR 列表 | 各 PR 一个 nginx Ingress 预览 URL；写 `/tmp/opencode/deploy/pr-<N>.json` |
+| ④ | **tester** | [`../projects/om-datacenter/.github/agents/tester.md`](../projects/om-datacenter/.github/agents/tester.md) | 同上 | design.md 验收标准 + 各 PR 预览 + apimagic_endpoints | `test_report.md`（4 类测试逐项）+ `test_fail.md`（打回清单）+ `test_retro.md` |
+| ⑤ | **review** | [`../projects/om-datacenter/.github/agents/review.md`](../projects/om-datacenter/.github/agents/review.md) | 同上 | 各 PR diff + gates 结果 | `review_report.md` + `review_fail.md`（打回清单） |
+| feedback | — | — | — | tester + review 的打回清单 | 合成 `/tmp/opencode/feedback.md` 回给 dev / design 重跑 |
 
 **全过 → 跳出循环；任一打回 → 回 dev（或 design）下一轮**，最多 `MAX_FIX_ROUNDS` 轮。
+
+### 5.2.5 项目 CLAUDE.md — 在哪里、长什么样、谁写
+
+每个 agent 在 prompt 里都写「**必读项目 CLAUDE.md**」，指的是这两层：
+
+| 层 | 位置 | 谁维护 | 干啥用 |
+|---|---|---|---|
+| umbrella（项目主仓） | 项目仓根 `/CLAUDE.md`，spec 仓实例 [`../projects/om-datacenter/CLAUDE.md`](../projects/om-datacenter/CLAUDE.md) | 项目 owner | 写**项目级铁规** + 触发词 + 子仓清单 + 部署模式 + 白名单 + 凭据指引 + 覆盖团队规范的部分 |
+| 各 dev 子仓 | 各 dev 子仓根 `/CLAUDE.md`（如 `APIMagic/CLAUDE.md`、`datastat-manage-website/CLAUDE.md`） | 各 dev 子仓 owner | 写**子仓级铁规** + 基础分支 + 敏感文件 git-ignore 清单 + 子仓特有的代码约定（如 APIMagic 的 `.ms` 写法） |
+
+**runner 内的实际路径**：
+
+- umbrella CLAUDE.md → `$GITHUB_WORKSPACE/CLAUDE.md`（actions/checkout 后落到这里）
+- dev 子仓 CLAUDE.md → `$WORKSPACE_DIR/<submodule>/CLAUDE.md`（流程 2 setup 后 `git submodule update` 落到这里）
+
+`$GITHUB_WORKSPACE` / `$WORKSPACE_DIR` 的实际路径见 §3.5。
+
+**新项目接入怎么写自己的 CLAUDE.md**：
+
+1. **模板（直接复制改）**：[`../projects/template/CLAUDE.md.tmpl`](../projects/template/CLAUDE.md.tmpl) — 含全部占位符（`<<PROJECT_NAME>>` / `<<TRIGGER_PREFIX>>` / `<<DEV_REPOS>>` / `<<DEPLOY_MODE>>` / `<<BASE_DOMAIN>>` / `<<NAMESPACE>>` / `<<MAINTAINER_WHITELIST>>`），按 [`../projects/template/ONBOARDING-CHECKLIST.md`](../projects/template/ONBOARDING-CHECKLIST.md) 逐字替换
+2. **规范（必含哪些段、写法约束）**：[`project-layer/claude-md-spec.md`](project-layer/claude-md-spec.md) — 列出必含 8 段（项目档位 / 触发词 / 子仓清单 / 部署模式 / 白名单 / 凭据清单链接 / 项目铁规 / 覆盖团队规范的部分）+ 与三层规范继承关系
+3. **真实参考**：[`../projects/om-datacenter/CLAUDE.md`](../projects/om-datacenter/CLAUDE.md) — 已完整接入的 B 档项目示例
+
+**三层规范继承**（CLAUDE.md 之间的优先级）：
+
+```
+个人层 ~/.claude/CLAUDE.md      最高，本机生效，可覆盖项目/团队规范
+    ↑
+项目层 projects/<project>/CLAUDE.md  ← 本节讨论的就是这一层（umbrella 那份）
+    ↑
+团队层 ../teams/CLAUDE.md        所有项目共用底层规范
+```
+
+详尽规则与示例：[`../teams/CLAUDE.md`](../teams/CLAUDE.md) 顶部段。
 
 ### 5.3 5 个 agent 的角色边界（对抗规则）
 
