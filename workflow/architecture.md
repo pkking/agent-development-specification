@@ -54,7 +54,7 @@
 
 K8s `Deployment` + `ServiceAccount` + `RBAC` + `ConfigMap` + `Secret`；**镜像由本仓 Dockerfile 构建**，不用 actions-runner-controller / 不用 Helm chart。
 
-代码与 yaml 在 [`../src/runner/`](../src/runner/) 下，各文件作用：[runners.md §2.1 文件清单](generic-layer/runners.md#21-部署方式架构)。
+代码与 yaml 在 [`../src/runner/`](../tools/runner/) 下，各文件作用：[runners.md §2.1 文件清单](generic-layer/runners.md#21-部署方式架构)。
 
 ### 0.5.3 部署步骤（5 步 — 详细见 [runners.md §2.3](generic-layer/runners.md#23-部署步骤团队-sre-一次性跑一遍)）
 
@@ -107,10 +107,10 @@ runner pod 在 $GITHUB_WORKSPACE 跑 yml 步骤
 
 **怎么做**：进 backlog 仓 → New Issue → 按需求类型选模板填写：
 
-- 标题含 `[需求]` → 选 [`Feature Request.md`](../teams/templates/Issue%20Submission/Feature%20Request.md)
-- 标题含 `[缺陷]` / `[任务]` → 选 [`Bug Report.md`](../teams/templates/Issue%20Submission/Bug%20Report.md)
+- 标题含 `[需求]` → 选 [`Feature Request.md`](../spec/teams/templates/Issue%20Submission/Feature%20Request.md)
+- 标题含 `[缺陷]` / `[任务]` → 选 [`Bug Report.md`](../spec/teams/templates/Issue%20Submission/Bug%20Report.md)
 
-两份模板的索引和选择规则：[`../teams/templates/Issue Submission/README.md`](../teams/templates/Issue%20Submission/README.md)
+两份模板的索引和选择规则：[`../teams/templates/Issue Submission/README.md`](../spec/teams/templates/Issue%20Submission/README.md)
 
 **完成判据**：issue 已提交，正文按模板填全。
 
@@ -128,12 +128,12 @@ runner pod 在 $GITHUB_WORKSPACE 跑 yml 步骤
 
 **系统做什么**：backlog 仓的 **forward workflow** 自动在该 issue 上贴一条菜单评论，列出 3 个后续触发词。
 
-> **forward workflow 是什么** — 跨仓事件转发器。`accepted` 标签 + `[<服务名>需求]` 评论的组合触发它「贴菜单 + 把后续触发词转发到 umbrella 仓」。完整说明见 [`../teams/external-workflows/README.md`](../teams/external-workflows/README.md)，源码见 [`forward-to-datacenter.yml`](../teams/external-workflows/forward-to-datacenter.yml)。
+> **forward workflow 是什么** — 跨仓事件转发器。`accepted` 标签 + `[<服务名>需求]` 评论的组合触发它「贴菜单 + 把后续触发词转发到 umbrella 仓」。完整说明见 [`../teams/external-workflows/README.md`](../spec/teams/external-workflows/README.md)，源码见 [`forward-to-datacenter.yml`](../spec/teams/external-workflows/forward-to-datacenter.yml)。
 
 **评论模板（菜单评论的项目专属版本）**：项目层 prompt，例如：
 
-- 模板（任意新项目）：[`../projects/template/prompts/trigger-menu.md.tmpl`](../projects/template/prompts/trigger-menu.md.tmpl)
-- 实例：[`../projects/om-datacenter/prompts/trigger-menu.md`](../projects/om-datacenter/prompts/trigger-menu.md)
+- 模板（任意新项目）：[`../projects/template/prompts/trigger-menu.md.tmpl`](../spec/project-templates/common/prompts/trigger-menu.md.tmpl)
+- 实例：[`../projects/om-datacenter/prompts/trigger-menu.md`](../specification-example/project/om-datacenter/prompts/trigger-menu.md)
 
 **完成判据**：issue 上出现菜单评论。
 
@@ -149,12 +149,12 @@ runner pod 在 $GITHUB_WORKSPACE 跑 yml 步骤
 
 **怎么做**：在 issue 评论 `[<服务名>需求]`（例 `[数据中台需求]` / `[小数需求]`）。
 
-**系统做什么**：backlog 仓的 forward workflow 贴一条菜单评论，列出可用命令；后续 `[<服务名>需求分析]`/`[实现]`/`[上线]` 评论也由它转发到 umbrella 仓的 issue-1/2/3 yml。详见 [`../teams/external-workflows/README.md`](../teams/external-workflows/README.md)。
+**系统做什么**：backlog 仓的 forward workflow 贴一条菜单评论，列出可用命令；后续 `[<服务名>需求分析]`/`[实现]`/`[上线]` 评论也由它转发到 umbrella 仓的 issue-1/2/3 yml。详见 [`../teams/external-workflows/README.md`](../spec/teams/external-workflows/README.md)。
 
 **评论模板**：
 
-- 模板（任意新项目）：[`../projects/template/prompts/trigger-menu.md.tmpl`](../projects/template/prompts/trigger-menu.md.tmpl)
-- 实例：[`../projects/om-datacenter/prompts/trigger-menu.md`](../projects/om-datacenter/prompts/trigger-menu.md)
+- 模板（任意新项目）：[`../projects/template/prompts/trigger-menu.md.tmpl`](../spec/project-templates/common/prompts/trigger-menu.md.tmpl)
+- 实例：[`../projects/om-datacenter/prompts/trigger-menu.md`](../specification-example/project/om-datacenter/prompts/trigger-menu.md)
 
 **评论格式规范**：[`pr-comment-protocol.md`](pr-comment-protocol.md) §菜单评论模板
 
@@ -168,14 +168,14 @@ runner pod 在 $GITHUB_WORKSPACE 跑 yml 步骤
 
 ## 3.5 Runner 内的路径约定（流程 1/2/3 共用）
 
-ai-dev-runner 跑在 K8s pod 里、以非 root 用户 `runner` 运行（见 [`../src/runner/ai-dev-runner/Dockerfile`](../src/runner/ai-dev-runner/Dockerfile)），workflow 步骤里出现的几个路径变量都对应到容器内的实际位置：
+ai-dev-runner 跑在 K8s pod 里、以非 root 用户 `runner` 运行（见 [`../src/runner/ai-dev-runner/Dockerfile`](../tools/runner/ai-dev-runner/Dockerfile)），workflow 步骤里出现的几个路径变量都对应到容器内的实际位置：
 
 | 变量 / 路径                  | 实际位置（容器内）                                     | 干啥用                                                                                                                    | 出处                                                                                                                                     |
 | ---------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | `$HOME`                      | `/home/runner`                                         | runner 用户家目录，`opencode` 的 `auth.json` / `config` 放这里                                                            | Dockerfile `USER runner`、yml `env.HOME`                                                                                                 |
 | actions-runner 安装目录      | `/home/runner/actions-runner/`                         | GitHub Actions runner 自己的代码 + `_work/` 子目录                                                                        | Dockerfile `Install GitHub Actions runner` 段                                                                                            |
 | `$GITHUB_WORKSPACE`          | `/home/runner/actions-runner/_work/<repo>/<repo>`      | actions-runner 默认 workdir，**`actions/checkout` 把 umbrella 仓拉到这里**；流程 1 / 2 / 3 的所有 inline shell 默认在此跑 | actions-runner `--work _work` 参数                                                                                                       |
-| `$WORKSPACE_DIR`（仅流程 2） | `/workspaces/<handling-repo>/<source-short>-issue-<N>` | per-issue 独立工作区，**挂 PVC**，跨 job 复用；orchestrate.sh 在这里 `git submodule update` 拉 dev 子仓                   | yml 的 `Setup opencode env` step（[issue-2 line 97-108](../projects/om-datacenter/.github/workflows/issue-2-implement-and-preview.yml)） |
+| `$WORKSPACE_DIR`（仅流程 2） | `/workspaces/<handling-repo>/<source-short>-issue-<N>` | per-issue 独立工作区，**挂 PVC**，跨 job 复用；orchestrate.sh 在这里 `git submodule update` 拉 dev 子仓                   | yml 的 `Setup opencode env` step（[issue-2 line 97-108](../specification-example/project/om-datacenter/.github/workflows/issue-2-implement-and-preview.yml)） |
 | `$WORK_DIR`（agent 内可见）  | = `$WORKSPACE_DIR`                                     | dev / tester / review agent 在这里改/读 dev 子仓代码                                                                      | orchestrate.sh 内 export                                                                                                                 |
 | `$TOOLS_DIR`（agent 内可见） | = `$GITHUB_WORKSPACE`                                  | 流水线工具仓（umbrella 自己的 `src/` / `.github/agents/`）                                                                | orchestrate.sh 内 export                                                                                                                 |
 | `/tmp/opencode/`             | runner pod tmpfs                                       | agent 间传文件（`issue.txt` / `route.json` / `design.md` / `result.json` / `feedback.md` / `deploy/pr-<N>.json` ...）     | 各 agent prompt 约定                                                                                                                     |
@@ -185,7 +185,7 @@ ai-dev-runner 跑在 K8s pod 里、以非 root 用户 `runner` 运行（见 [`..
 - `$GITHUB_WORKSPACE` 由 GitHub Actions 管，每个 job 起来时 actions-runner 会清理它，**装不下跨 job 持久状态**
 - 流程 2 跑 90 min、要管 5 个 dev 仓的 checkout / submodule，需要重跑时能复用，所以单独搞一个 PVC 挂的 `/workspaces/.../` 路径，按「umbrella 仓 / per-issue」切目录互不打架
 
-**PVC 配置**：见 [`../src/runner/ai-dev-runner/deployment.yaml`](../src/runner/ai-dev-runner/deployment.yaml) 的 `volumeMounts` 段（`/workspaces` 挂 PersistentVolumeClaim）。
+**PVC 配置**：见 [`../src/runner/ai-dev-runner/deployment.yaml`](../tools/runner/ai-dev-runner/deployment.yaml) 的 `volumeMounts` 段（`/workspaces` 挂 PersistentVolumeClaim）。
 
 ---
 
@@ -193,7 +193,7 @@ ai-dev-runner 跑在 K8s pod 里、以非 root 用户 `runner` 运行（见 [`..
 
 **触发**：人在 issue 评论 `[<服务名>需求分析]`。
 
-**workflow 文件**：[`../projects/om-datacenter/.github/workflows/issue-1-analyze-requirement.yml`](../projects/om-datacenter/.github/workflows/issue-1-analyze-requirement.yml)
+**workflow 文件**：[`../projects/om-datacenter/.github/workflows/issue-1-analyze-requirement.yml`](../specification-example/project/om-datacenter/.github/workflows/issue-1-analyze-requirement.yml)
 （runner：`self-hosted, ai-dev-runner`；timeout：20 min）
 
 ### 4.1 按 issue 标题分两种模式
@@ -207,23 +207,23 @@ ai-dev-runner 跑在 K8s pod 里、以非 root 用户 `runner` 运行（见 [`..
 
 ### 4.2 ra-doc 模式步骤
 
-1. **Workflow checkout 项目仓**（umbrella 仓，作为 TOOLS_DIR），不拉 submodule；落到 `$GITHUB_WORKSPACE`，含**项目 CLAUDE.md**（[模板 `CLAUDE.md.tmpl`](../projects/template/CLAUDE.md.tmpl) / 实例 [om-datacenter/CLAUDE.md](../projects/om-datacenter/CLAUDE.md)）+ `.github/agents/` + `skills/` + `docs/`
+1. **Workflow checkout 项目仓**（umbrella 仓，作为 TOOLS_DIR），不拉 submodule；落到 `$GITHUB_WORKSPACE`，含**项目 CLAUDE.md**（[模板 `CLAUDE.md.tmpl`](../spec/project-templates/common/CLAUDE.md.tmpl) / 实例 [om-datacenter/CLAUDE.md](../specification-example/project/om-datacenter/CLAUDE.md)）+ `.github/agents/` + `skills/` + `docs/`
 2. **算路径**：`DOCS_BRANCH=issue-<N>-design-docs`，目标文件路径 `opensourceways/<source-repo-short>/issue_docs/<N>/Requirement Analysis/#<N> Requirement Analysis Specification.md`
 3. **Setup opencode env**（装 LLM 调用器，密钥来自 [`OPENCODE_API_KEY`](generic-layer/credentials-storage.md)）
 4. **Clone backlog 仓**到 `$GITHUB_WORKSPACE/backlog`（实际路径 `/home/runner/actions-runner/_work/<repo>/<repo>/backlog`，见 §3.5），新建（或复用）`DOCS_BRANCH`
 5. **Fetch issue 全文**（标题 + 正文 + 全部评论）到 `/tmp/opencode/issue.txt`，由 composite action `.github/actions/fetch-issue` 完成
 6. **准备项目 context — agent 写需求分析得先看懂项目是什么**（关键！否则 agent 凭空臆想需求）：
-   - **项目 CLAUDE.md**：`$GITHUB_WORKSPACE/CLAUDE.md`（umbrella 仓根）— **项目 1 分钟读懂入口**：模板见 [`../projects/template/CLAUDE.md.tmpl`](../projects/template/CLAUDE.md.tmpl)，实例见 [`../projects/om-datacenter/CLAUDE.md`](../projects/om-datacenter/CLAUDE.md)。覆盖：项目电梯陈词 / 架构图 / 技术栈 / 仓结构 / 项目铁规 / 踩坑录 / 流水线接入 / 词汇表 / owner / 索引
+   - **项目 CLAUDE.md**：`$GITHUB_WORKSPACE/CLAUDE.md`（umbrella 仓根）— **项目 1 分钟读懂入口**：模板见 [`../projects/template/CLAUDE.md.tmpl`](../spec/project-templates/common/CLAUDE.md.tmpl)，实例见 [`../projects/om-datacenter/CLAUDE.md`](../specification-example/project/om-datacenter/CLAUDE.md)。覆盖：项目电梯陈词 / 架构图 / 技术栈 / 仓结构 / 项目铁规 / 踩坑录 / 流水线接入 / 词汇表 / owner / 索引
    - **项目架构详尽**：`$GITHUB_WORKSPACE/docs/architecture.md`（如有）
    - **项目 skills**：`$GITHUB_WORKSPACE/skills/`（项目专属操作 playbook）
    - **各 dev 子仓的 CLAUDE.md**（如 umbrella 项目）：通过 submodule 路径访问；不需要全部 clone，根据 issue 涉及的子仓有选择性读
 7. **跑 AI agent 写文档**（核心一步）：
-   - 加载 prompt：[`../projects/om-datacenter/.github/agents/requirements-doc.md`](../projects/om-datacenter/.github/agents/requirements-doc.md)（其中已 require「先读 `$GITHUB_WORKSPACE/CLAUDE.md` 弄清楚项目是什么再动笔」）
+   - 加载 prompt：[`../projects/om-datacenter/.github/agents/requirements-doc.md`](../specification-example/project/om-datacenter/.github/agents/requirements-doc.md)（其中已 require「先读 `$GITHUB_WORKSPACE/CLAUDE.md` 弄清楚项目是什么再动笔」）
    - 工作目录 = backlog 仓 checkout（agent 能直接读到 backlog 的 `templates/` / `AGENTS.md` / `context/`），同时通过绝对路径 `$GITHUB_WORKSPACE/CLAUDE.md` 读项目 context
    - agent 按 prompt 强制必读 3 类文件：
      - **项目 context**（step 6 列的那几个）→ 知道这是什么项目、要符合哪些项目铁规
-     - **团队需求分析模板** [`../teams/templates/Requirement Analysis/`](../teams/templates/Requirement%20Analysis/) → 知道文档结构
-     - **写作经验**：[`../teams/context/experience/需求分析说明书编写经验.md`](../teams/context/experience/%E9%9C%80%E6%B1%82%E5%88%86%E6%9E%90%E8%AF%B4%E6%98%8E%E4%B9%A6%E7%BC%96%E5%86%99%E7%BB%8F%E9%AA%8C.md) + [AI 辅助工作模式](../teams/context/experience/AI%E8%BE%85%E5%8A%A9%E9%9C%80%E6%B1%82%E5%88%86%E6%9E%90%E5%B7%A5%E4%BD%9C%E6%A8%A1%E5%BC%8F.md) → 避免之前踩过的坑
+     - **团队需求分析模板** [`../teams/templates/Requirement Analysis/`](../spec/teams/templates/Requirement%20Analysis/) → 知道文档结构
+     - **写作经验**：[`../teams/context/experience/需求分析说明书编写经验.md`](../spec/teams/context/experience/%E9%9C%80%E6%B1%82%E5%88%86%E6%9E%90%E8%AF%B4%E6%98%8E%E4%B9%A6%E7%BC%96%E5%86%99%E7%BB%8F%E9%AA%8C.md) + [AI 辅助工作模式](../spec/teams/context/experience/AI%E8%BE%85%E5%8A%A9%E9%9C%80%E6%B1%82%E5%88%86%E6%9E%90%E5%B7%A5%E4%BD%9C%E6%A8%A1%E5%BC%8F.md) → 避免之前踩过的坑
    - agent 按模板结构填写：场景 / 验收标准（可量化）/ 核心逻辑 / 任务清单（2-4 个）/ 需求相关性分析（need_security / need_design / need_itest / need_ux / need_light）/ 价值评估（Accept / Reject / Pending）
 8. **Commit + push docs 分支 → 开 PR 到 backlog 仓**：分支 `issue-<N>-design-docs`，base `main`
 9. **回评原 issue**：贴 PR 链接 + 下一步说明（合入 PR 后评 `[<服务名>需求实现]`）
@@ -255,38 +255,53 @@ ai-dev-runner 跑在 K8s pod 里、以非 root 用户 `runner` 运行（见 [`..
 
 ## 5. 流程 2：`[<服务名>需求实现]` — 4 agent 对抗 + 起预览
 
-**触发**：人评论 `[<服务名>需求实现]`（前提：流程 1 的需求 PR 已合入，或 user-view 模式已留下锚点评论）。
+**触发**：人在 backlog 仓 issue 评论 `[<服务名>需求实现]`（前提：流程 1 的需求分析 PR 已合入，或 user-view 模式已留下锚点评论）。
 
-**workflow 文件**：[`../projects/om-datacenter/.github/workflows/issue-2-implement-and-preview.yml`](../projects/om-datacenter/.github/workflows/issue-2-implement-and-preview.yml)
-（runner：`self-hosted, ai-dev-runner`；timeout：90 min）
+**workflow 文件**：**[`backlog/.github/workflows/implement.yml`](../spec/teams/external-workflows/implement.yml)** — 这是一份**多服务通用**的 workflow，**所有服务共用同一份**。具体跑哪个项目，由命中评论触发词的服务注册表（[`services/<id>.yaml`](../spec/teams/external-workflows/services-examples/)）的 `implement:` 段告诉它「去 clone 哪个 tools_repo」。
 
-### 5.1 入口步骤（yml 里做的事）
+> **不再像流程 1 那样写在 backlog 本仓做完所有事** — 实现阶段要 clone 工具仓 + 所有 dev 子仓 + 跑 4 agent 对抗 + 起预览，是重活。backlog 仓不存这些工具代码（保持 backlog 专注 issue 流程），而是把它们留在每个**项目自己的 tools_repo**（如 [`opensourceways/om-datacenter`](https://github.com/opensourceways/om-datacenter)），由通用 implement.yml clone 进来跑。
 
-> 路径变量含义见 §3.5「Runner 内的路径约定」。本节里 `$GITHUB_WORKSPACE` = `/home/runner/actions-runner/_work/<repo>/<repo>`；`$WORKSPACE_DIR` = `/workspaces/<umbrella>/<source-short>-issue-<N>`（PVC 挂载）。
+| 项 | 值 |
+|---|---|
+| runs-on | `[self-hosted, ai-develop-runner]`（**注意是 `ai-develop-runner`，不是 `ai-design-runner`**） |
+| timeout | 90 min |
+| concurrency group | `implement-<repo>-<issue_number>`（`cancel-in-progress: false` — 同 issue 排队不打断） |
 
-1. **Pre-clean workspace**：清 `$GITHUB_WORKSPACE`（GitHub-managed 默认 workdir）
-2. **算名字**：`BRANCH=<source-repo 短名>-issue-<N>`（所有 dev 仓都用它）
-3. **Checkout umbrella（om-datacenter）**：拉到 `$GITHUB_WORKSPACE`，不拉 submodule，要 `fetch-depth: 0`
-4. **Init dev submodules**：从 `.gitmodules` 枚举所有 submodule 路径，逐个 `git submodule update --init`（落到 `$GITHUB_WORKSPACE/<submodule-path>/`；拉不下来的 dev 仓跳过，agent 后续会处理）
-5. **Configure git**：设置 user/email + token-injected url rewrite
-6. **Setup opencode env**：建 PVC 工作区 `$WORKSPACE_DIR=/workspaces/<handling-repo>/<source-short>-issue-<N>`；`opencode` 的 auth 写到 `$HOME/.local/share/opencode/auth.json`（即 `/home/runner/.local/share/opencode/auth.json`）
-7. **Fetch issue 全文**：composite action `fetch-issue` 写到 `/tmp/opencode/issue.txt`
-8. **准备需求文档** → `/tmp/opencode/requirement_analysis.md`：
-   - `[需求]` 类：从 backlog 仓拉已合入的 `Requirement Analysis Specification.md`（拉不到 → 报错让人先合 PR）
-   - `[任务]`/`[缺陷]`/无关键字：从 `/tmp/opencode/issue.txt` 抠 `<!-- USER_VIEW_DOC -->` 段
-9. **调 orchestrate.sh**（核心循环，下一节展开）
+### 5.1 入口步骤（implement.yml 里做的事）
+
+> 路径变量含义见 §3.5「Runner 内的路径约定」。本节里 `$GITHUB_WORKSPACE` = `/home/runner/actions-runner/_work/<repo>/<repo>`；`$WORKSPACE_DIR` 由服务注册表的 `implement.workspace_root` 字段 + `<source-short>-issue-<N>` 拼成（默认 `/workspaces/<service-id>/<source-short>-issue-<N>`，PVC 挂载）。
+
+1. **Pre-clean workspace**：清 `$GITHUB_WORKSPACE`
+2. **Checkout backlog 本仓**：拿 `.github/services/*.yaml` + `.github/scripts/` + composite actions（[`actions/setup`](../spec/teams/external-workflows/) + `actions/fetch-issue`）
+3. **Install PyYAML**：服务注册表解析用
+4. **Match service from comment**（关键一步）：Python 脚本扫 [`.github/services/*.yaml`](../spec/teams/external-workflows/services-examples/)，找哪个服务的 `commands[id=implement, handler=in-repo].triggers` 命中评论开头。命中则把该服务 `implement:` 段所有字段（`tools_repo` / `tools_ref` / `workspace_root` / `preview_namespace` / `orchestrate` 命令 / `max_fix_rounds`）输出给后续 step
+5. **Compute names**：`BRANCH=backlog-issue-<N>`（所有 dev 仓都用它）
+6. **Clone tools_repo with submodules**（核心）：根据 match 出来的 `tools_repo`（如 `opensourceways/om-datacenter`）+ `tools_ref`（默认 `main`），clone 到 `$GITHUB_WORKSPACE/_tools/<tools-repo-short>/`。然后从这个 tools_repo 自己的 `.gitmodules` 枚举所有 dev 子仓，逐个 `git submodule update --init`（拉不下来的 dev 仓不致命，dev agent 会跳过）。`$TOOLS_DIR` 环境变量 = `$GITHUB_WORKSPACE/_tools/<tools-repo-short>/`
+7. **Configure git**：设置 user/email + token-injected url rewrite（dev agent 在 submodule 里 push 时自动带凭据）
+8. **Setup opencode env** + **per-issue WORKSPACE_DIR**：在 `$WORKSPACE_ROOT` 下按 issue 切独立目录
+9. **Fetch issue 全文**：composite action `fetch-issue` 写到 `/tmp/opencode/issue.txt`
+10. **准备需求文档** → `/tmp/opencode/requirement_analysis.md`：
+    - `[需求]` 类：从 backlog 仓拉已合入的 `Requirement Analysis Specification.md`（拉不到 → 报错让人先合 PR）
+    - `[任务]`/`[缺陷]`/无关键字：从 `/tmp/opencode/issue.txt` 抠 `<!-- USER_VIEW_DOC -->` 段
+11. **收集既有 PR 评审反馈** → `/tmp/opencode/pr_feedback.md`（第 2+ 轮触发关键！）：枚举 tools_repo 的所有 dev submodule，对每个找 `head=$BRANCH` 的 open PR，把 PR 的 reviews / line-comments / 真人 conversation 拉成一份 markdown 给 dev agent。第 1 轮没 PR → 写占位
+12. **准备项目 context**（agent 必读，参考 §4.2 流程 1）：
+    - `$TOOLS_DIR/CLAUDE.md`（项目 1 分钟读懂入口，详见 §5.3）
+    - `$TOOLS_DIR/.github/agents/*.md`（5 个 agent prompt）
+    - 各 dev 子仓 `$TOOLS_DIR/<submodule>/CLAUDE.md`
+13. **调 orchestrate.sh**（核心循环，下一节展开）：`cd $TOOLS_DIR && bash src/orchestrate.sh`（默认命令；服务注册表 `implement.orchestrate` 字段可覆盖）
+14. **兜底回评**：失败时给 issue 贴一条带 run logs 链接的提示，避免无声失败
 
 ### 5.2 orchestrate.sh 的 4 agent 对抗
 
-脚本（om-datacenter 仓的 `src/orchestrate.sh`，spec 仓对应版本在 [`../src/orchestrator/orchestrate.sh`](../src/orchestrator/orchestrate.sh)）跑最多 `MAX_FIX_ROUNDS=3` 轮以下循环：
+脚本（om-datacenter 仓的 `src/orchestrate.sh`，spec 仓对应版本在 [`../src/orchestrator/orchestrate.sh`](../tools/orchestrator/orchestrate.sh)）跑最多 `MAX_FIX_ROUNDS=3` 轮以下循环：
 
 | #        | Agent                      | prompt 文件                                                                                                | 必读项目 CLAUDE.md                                                                                                                                                 | 输入                                                                                           | 输出                                                                                                 |
 | -------- | -------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| ①        | **design**                 | [`../projects/om-datacenter/.github/agents/design.md`](../projects/om-datacenter/.github/agents/design.md) | umbrella [`../projects/om-datacenter/CLAUDE.md`](../projects/om-datacenter/CLAUDE.md) + 各 dev 子仓自己的 `CLAUDE.md`（在 `$WORKSPACE_DIR/<submodule>/CLAUDE.md`） | issue.txt + requirement_analysis.md                                                            | `/tmp/opencode/route.json`（路由 + target_repos）+ `/tmp/opencode/design.md`（含可量化验收标准）     |
-| ②        | **dev**                    | [`../projects/om-datacenter/.github/agents/dev.md`](../projects/om-datacenter/.github/agents/dev.md)       | 同上（umbrella + 各 dev 子仓）                                                                                                                                     | design.md + route.json                                                                         | 改各 dev 仓代码 + commit/push `<BRANCH>` + 开 PR + `/tmp/opencode/result.json` + `change_summary.md` |
-| ③        | **deploy**（脚本非 agent） | [`../src/deployer/deploy.py`](../src/deployer/deploy.py) — 详见 §5.2.4                                     | —                                                                                                                                                                  | result.json 的 PR 列表 + [`.preview/service.yaml`](project-layer/preview-service-yaml-spec.md) | 各 PR 一个 nginx Ingress 预览 URL；写 `/tmp/opencode/deploy/pr-<N>.json`                             |
-| ④        | **tester**                 | [`../projects/om-datacenter/.github/agents/tester.md`](../projects/om-datacenter/.github/agents/tester.md) | 同上                                                                                                                                                               | design.md 验收标准 + 各 PR 预览 + apimagic_endpoints                                           | `test_report.md`（4 类测试逐项）+ `test_fail.md`（打回清单）+ `test_retro.md`                        |
-| ⑤        | **review**                 | [`../projects/om-datacenter/.github/agents/review.md`](../projects/om-datacenter/.github/agents/review.md) | 同上                                                                                                                                                               | 各 PR diff + gates 结果                                                                        | `review_report.md` + `review_fail.md`（打回清单）                                                    |
+| ①        | **design**                 | [`../projects/om-datacenter/.github/agents/design.md`](../specification-example/project/om-datacenter/.github/agents/design.md) | umbrella [`../projects/om-datacenter/CLAUDE.md`](../specification-example/project/om-datacenter/CLAUDE.md) + 各 dev 子仓自己的 `CLAUDE.md`（在 `$WORKSPACE_DIR/<submodule>/CLAUDE.md`） | issue.txt + requirement_analysis.md                                                            | `/tmp/opencode/route.json`（路由 + target_repos）+ `/tmp/opencode/design.md`（含可量化验收标准）     |
+| ②        | **dev**                    | [`../projects/om-datacenter/.github/agents/dev.md`](../specification-example/project/om-datacenter/.github/agents/dev.md)       | 同上（umbrella + 各 dev 子仓）                                                                                                                                     | design.md + route.json                                                                         | 改各 dev 仓代码 + commit/push `<BRANCH>` + 开 PR + `/tmp/opencode/result.json` + `change_summary.md` |
+| ③        | **deploy**（脚本非 agent） | [`../src/deployer/deploy.py`](../tools/deployer/deploy.py) — 详见 §5.2.4                                     | —                                                                                                                                                                  | result.json 的 PR 列表 + [`.preview/service.yaml`](project-layer/preview-service-yaml-spec.md) | 各 PR 一个 nginx Ingress 预览 URL；写 `/tmp/opencode/deploy/pr-<N>.json`                             |
+| ④        | **tester**                 | [`../projects/om-datacenter/.github/agents/tester.md`](../specification-example/project/om-datacenter/.github/agents/tester.md) | 同上                                                                                                                                                               | design.md 验收标准 + 各 PR 预览 + apimagic_endpoints                                           | `test_report.md`（4 类测试逐项）+ `test_fail.md`（打回清单）+ `test_retro.md`                        |
+| ⑤        | **review**                 | [`../projects/om-datacenter/.github/agents/review.md`](../specification-example/project/om-datacenter/.github/agents/review.md) | 同上                                                                                                                                                               | 各 PR diff + gates 结果                                                                        | `review_report.md` + `review_fail.md`（打回清单）                                                    |
 | feedback | —                          | —                                                                                                          | —                                                                                                                                                                  | tester + review 的打回清单                                                                     | 合成 `/tmp/opencode/feedback.md` 回给 dev / design 重跑                                              |
 
 **全过 → 跳出循环；任一打回 → 回 dev（或 design）下一轮**，最多 `MAX_FIX_ROUNDS` 轮。
@@ -297,7 +312,7 @@ ai-dev-runner 跑在 K8s pod 里、以非 root 用户 `runner` 运行（见 [`..
 
 | 层                   | 位置                                                                                                            | 谁维护            | 干啥用                                                                                                   |
 | -------------------- | --------------------------------------------------------------------------------------------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------- |
-| umbrella（项目主仓） | 项目仓根 `/CLAUDE.md`，spec 仓实例 [`../projects/om-datacenter/CLAUDE.md`](../projects/om-datacenter/CLAUDE.md) | 项目 owner        | 写**项目级铁规** + 触发词 + 子仓清单 + 部署模式 + 白名单 + 凭据指引 + 覆盖团队规范的部分                 |
+| umbrella（项目主仓） | 项目仓根 `/CLAUDE.md`，spec 仓实例 [`../projects/om-datacenter/CLAUDE.md`](../specification-example/project/om-datacenter/CLAUDE.md) | 项目 owner        | 写**项目级铁规** + 触发词 + 子仓清单 + 部署模式 + 白名单 + 凭据指引 + 覆盖团队规范的部分                 |
 | 各 dev 子仓          | 各 dev 子仓根 `/CLAUDE.md`（如 `APIMagic/CLAUDE.md`、`datastat-manage-website/CLAUDE.md`）                      | 各 dev 子仓 owner | 写**子仓级铁规** + 基础分支 + 敏感文件 git-ignore 清单 + 子仓特有的代码约定（如 APIMagic 的 `.ms` 写法） |
 
 **runner 内的实际路径**：
@@ -309,9 +324,9 @@ ai-dev-runner 跑在 K8s pod 里、以非 root 用户 `runner` 运行（见 [`..
 
 **新项目接入怎么写自己的 CLAUDE.md**：
 
-1. **模板（直接复制改）**：[`../projects/template/CLAUDE.md.tmpl`](../projects/template/CLAUDE.md.tmpl) — 含全部占位符（`<<PROJECT_NAME>>` / `<<TRIGGER_PREFIX>>` / `<<DEV_REPOS>>` / `<<DEPLOY_MODE>>` / `<<BASE_DOMAIN>>` / `<<NAMESPACE>>` / `<<MAINTAINER_WHITELIST>>`），按 [`../projects/template/ONBOARDING-CHECKLIST.md`](../projects/template/ONBOARDING-CHECKLIST.md) 逐字替换
+1. **模板（直接复制改）**：[`../projects/template/CLAUDE.md.tmpl`](../spec/project-templates/common/CLAUDE.md.tmpl) — 含全部占位符（`<<PROJECT_NAME>>` / `<<TRIGGER_PREFIX>>` / `<<DEV_REPOS>>` / `<<DEPLOY_MODE>>` / `<<BASE_DOMAIN>>` / `<<NAMESPACE>>` / `<<MAINTAINER_WHITELIST>>`），按 [`../projects/template/ONBOARDING-CHECKLIST.md`](../spec/project-templates/common/ONBOARDING-CHECKLIST.md) 逐字替换
 2. **规范（必含哪些段、写法约束）**：[`project-layer/claude-md-spec.md`](project-layer/claude-md-spec.md) — 列出必含 8 段（项目档位 / 触发词 / 子仓清单 / 部署模式 / 白名单 / 凭据清单链接 / 项目铁规 / 覆盖团队规范的部分）+ 与三层规范继承关系
-3. **真实参考**：[`../projects/om-datacenter/CLAUDE.md`](../projects/om-datacenter/CLAUDE.md) — 已完整接入的 B 档项目示例
+3. **真实参考**：[`../projects/om-datacenter/CLAUDE.md`](../specification-example/project/om-datacenter/CLAUDE.md) — 已完整接入的 B 档项目示例
 
 **三层规范继承**（CLAUDE.md 之间的优先级）：
 
@@ -323,7 +338,7 @@ ai-dev-runner 跑在 K8s pod 里、以非 root 用户 `runner` 运行（见 [`..
 团队层 ../teams/CLAUDE.md        所有项目共用底层规范
 ```
 
-详尽规则与示例：[`../teams/CLAUDE.md`](../teams/CLAUDE.md) 顶部段。
+详尽规则与示例：[`../teams/CLAUDE.md`](../spec/teams/CLAUDE.md) 顶部段。
 
 ### 5.2.4 deploy 这一步到底干了什么（脚本非 agent）
 
@@ -404,13 +419,57 @@ python3 src/deployer/deploy.py \
 
 **详细**：[`stage-flow/flow-2-implementation.md`](stage-flow/flow-2-implementation.md)
 
+### 5.6 接入新服务需要哪些文件 / 配置
+
+> 通用 [`implement.yml`](../spec/teams/external-workflows/implement.yml) 是**多服务共用**的 — 加新服务不用碰它，按下表准备文件即可。表里链接全是**真实可点的示例**，照抄改名 + 改占位符就行。
+
+#### 一、backlog 本仓（**必填**）
+
+| 文件 | 干啥 | 示例（可点） |
+|---|---|---|
+| `.github/services/<id>.yaml` | **服务注册表** — 定义触发词 / 菜单文案 / 各阶段 handler（in-repo / forward / disabled）+ `implement:` 段指向 tools_repo | [`datacenter.yaml`](../spec/teams/external-workflows/services-examples/datacenter.yaml)（已接通 3 阶段）/ [`robot.yaml`](../spec/teams/external-workflows/services-examples/robot.yaml)（仅 analyze 已通，implement 待接） |
+| **本仓 Secrets**：`OPENCODE_API_KEY` / `BACKLOG_REPO_TOKEN`（或 `CROSS_REPO_TOKEN`）/ `AI_TEST_KUBECONFIG`（base64）/ 可选 `LOCAL_DB_PASSWORD` | 各 agent 调 LLM + 跨仓 clone/push + deployer 调 K8s + APIMagic per-PR PG | 凭据档位：[`generic-layer/credentials-storage.md`](generic-layer/credentials-storage.md) |
+| **本仓 Variables**（可选）：`GATE_FIX_ROUNDS`（默认 3）/ `APIMAGIC_DB_HOST`（默认 `postgresql`）| 调对抗循环最大轮数 / per-PR APIMagic DB host | — |
+
+#### 二、项目自己的 tools_repo（**必建**，由服务注册表 `implement.tools_repo` 字段指过去）
+
+| 文件 / 目录 | 干啥 | 示例（可点） |
+|---|---|---|
+| `CLAUDE.md` | **项目 1 分钟读懂入口** — 4 agent 必读，详尽段落规范见 §5.3 | 模板 [`spec/project-templates/common/CLAUDE.md.tmpl`](../spec/project-templates/common/CLAUDE.md.tmpl) / 实例 [`specification-example/project/om-datacenter/CLAUDE.md`](../specification-example/project/om-datacenter/CLAUDE.md) |
+| `.gitmodules` | 列出本项目的所有 dev 子仓（前端 / 后端 / 数据采集 / 部署 ...）；implement.yml 会逐个 `git submodule update --init` | om-datacenter [上游](https://github.com/opensourceways/om-datacenter/blob/main/.gitmodules) — 5 个 submodule |
+| `src/orchestrate.sh` | **4 agent 对抗主循环**（design → dev → deploy → review + tester），命令行入口 | spec 仓参考实现 [`tools/orchestrator/orchestrate.sh`](../tools/orchestrator/orchestrate.sh) |
+| `.github/agents/<agent>.md`（5 份） | 项目级 agent prompt（在 [团队级 baseline](../spec/teams/prompts/) 之上叠加项目铁规） | 实例 [`specification-example/project/om-datacenter/.github/agents/`](../specification-example/project/om-datacenter/.github/agents/) — `requirements-doc.md` / `design.md` / `dev.md` / `review.md` / `tester.md` |
+| `src/deployer/deploy.py` | 起预览 K8s 资源；4 种 mode（dev-pod / data-pod / shared / none） | spec 仓参考实现 [`tools/deployer/deploy.py`](../tools/deployer/deploy.py) — 详尽见 [`generic-layer/deployer.md`](generic-layer/deployer.md) |
+| `src/deployer/templates/<mode>/*.yaml` | 部署模板（按 mode 渲染 ${PROJECT} / ${PR_NUMBER} 等占位符） | 模板规范见 [`generic-layer/deployer.md` §5](generic-layer/deployer.md#5-k8s-模板) |
+| `src/deployer/registry/<dev-repo>.yaml` | 每个 dev 子仓对应一份注册：image / port / health / ingress / deploy_mode | om-datacenter 上游 [`registry/datastat-manage-website.yaml`](https://github.com/opensourceways/om-datacenter/blob/main/src/deployer/registry/datastat-manage-website.yaml) |
+| `skills/` | 项目特定 playbook（如 om-datacenter 的「新增社区」流程） | [`specification-example/project/om-datacenter/skills/`](../specification-example/project/om-datacenter/skills/) |
+| `docs/architecture.md` 等项目文档 | 给 agent 看的项目细节 — 架构 / API / 部署 / 凭据清单 / 测试策略 / 编码覆盖 | 模板目录 [`spec/project-templates/common/docs/`](../spec/project-templates/common/docs/) / 实例 [`specification-example/project/om-datacenter/docs/`](../specification-example/project/om-datacenter/docs/) |
+
+#### 三、各 dev 子仓（**每个 dev 仓必填**）
+
+| 文件 | 干啥 | 示例（可点） |
+|---|---|---|
+| `CLAUDE.md` | **子仓级铁规** — 基础分支（main / beta）/ 敏感文件 git-ignore 清单 / 子仓特殊代码约定（如 APIMagic 的 `.ms` 写法） | 各 dev 仓自己写；模板段见 [`generic-layer/agents.md` §4 加载顺序](generic-layer/agents.md#4-加载顺序) |
+| `.preview/service.yaml`（可选） | 子仓自己声明 deploy_mode + image + port + ingress；不写则 fallback tools_repo 的 `registry/<repo>.yaml` | 模板 [`spec/project-templates/common/.preview/service.yaml.tmpl`](../spec/project-templates/common/.preview/service.yaml.tmpl) / 规范 [`project-layer/preview-service-yaml-spec.md`](project-layer/preview-service-yaml-spec.md) |
+
+#### 四、Self-hosted Runner（**集群一次性部署**，所有服务共用）
+
+| 项 | 干啥 | 示例 |
+|---|---|---|
+| `ai-develop-runner` K8s pod | 注册到 backlog 仓，runs-on label = `[self-hosted, ai-develop-runner]`，跑 implement.yml | Dockerfile [`tools/runner/ai-dev-runner/Dockerfile`](../tools/runner/ai-dev-runner/Dockerfile) / 部署 [`tools/runner/ai-dev-runner/deployment.yaml`](../tools/runner/ai-dev-runner/deployment.yaml) — 详尽见 [`generic-layer/runners.md`](generic-layer/runners.md) |
+| PVC `/workspaces` | per-issue 工作空间持久化（跨 90 min 长流程 + 重触发） | 同上 deployment.yaml |
+
+#### 接入完成自检（一句话验证）
+
+按 [`spec/project-templates/common/ONBOARDING-CHECKLIST.md`](../spec/project-templates/common/ONBOARDING-CHECKLIST.md) 跑一遍。最终验证：在 backlog 仓提一个 `[需求]` 类 issue → maintainer `/accepts` → 评 `[<新服务名>需求分析]` → 文档 PR 出现 → 合 PR → 评 `[<新服务名>需求实现]` → 看到 4 agent 跑通 + 预览 URL 在 issue 上 → 接入成功。
+
 ---
 
 ## 6. 流程 3：`[<服务名>需求上线]` — 合入 + 上 beta + 清理
 
 **触发**：maintainer 评 `[<服务名>需求上线]`（**仅白名单**；带 `[DRY_RUN]` 可干跑）。
 
-**workflow 文件**：[`../projects/om-datacenter/.github/workflows/issue-3-merge-and-deploy.yml`](../projects/om-datacenter/.github/workflows/issue-3-merge-and-deploy.yml)
+**workflow 文件**：[`../projects/om-datacenter/.github/workflows/issue-3-merge-and-deploy.yml`](../specification-example/project/om-datacenter/.github/workflows/issue-3-merge-and-deploy.yml)
 （runner：`self-hosted, ai-dev-runner`；timeout：25 min）
 
 ### 6.1 步骤
@@ -446,7 +505,7 @@ python3 src/deployer/deploy.py \
 
 **触发**：项目 dev 仓 PR opened / synchronize / closed。
 
-**workflow 文件**：[`../projects/om-datacenter/.github/workflows/pr-deploy-preview.yml`](../projects/om-datacenter/.github/workflows/pr-deploy-preview.yml)
+**workflow 文件**：[`../projects/om-datacenter/.github/workflows/pr-deploy-preview.yml`](../specification-example/project/om-datacenter/.github/workflows/pr-deploy-preview.yml)
 （runner：`self-hosted, k8s-deployer`，**不是 ai-dev-runner**；见 [`generic-layer/runners.md`](generic-layer/runners.md) §k8s-deployer）
 
 **步骤**：调 `deploy.py` 起预览 → 预览 URL 自动评论到 PR；PR closed → 触发 cleanup。
@@ -458,8 +517,8 @@ python3 src/deployer/deploy.py \
 ## 8. 故障 / 回滚 / 复盘
 
 - 上线异常 → [`release-process.md`](release-process.md) §回滚
-- 复盘模板 → [`../teams/templates/Learn From the Incident/`](../teams/templates/Learn%20From%20the%20Incident/)
-- 团队故障经验 → [`../teams/context/experience/`](../teams/context/experience/)
+- 复盘模板 → [`../teams/templates/Learn From the Incident/`](../spec/teams/templates/Learn%20From%20the%20Incident/)
+- 团队故障经验 → [`../teams/context/experience/`](../spec/teams/context/experience/)
 
 ---
 
@@ -481,8 +540,8 @@ python3 src/deployer/deploy.py \
 ## 10. 接下来
 
 - 想接入新项目 → [`project-layer/onboarding-tier-B.md`](project-layer/onboarding-tier-B.md) 5 步走完
-- 想看完整 om-datacenter 接入示例 → [`../projects/om-datacenter/`](../projects/om-datacenter/)
+- 想看完整 om-datacenter 接入示例 → [`../projects/om-datacenter/`](../specification-example/project/om-datacenter/)
 - 想理解 4 agent 怎么对抗 → [`generic-layer/orchestrator.md`](generic-layer/orchestrator.md) + [`generic-layer/agents.md`](generic-layer/agents.md)
 - 想理解部署器 4 种模式 → [`generic-layer/deployer.md`](generic-layer/deployer.md)
 - 想理解凭据怎么存 → [`generic-layer/credentials-storage.md`](generic-layer/credentials-storage.md)
-- 想看 AI 辅助写需求的实际经验 → [`../teams/context/experience/AI辅助需求分析工作模式.md`](../teams/context/experience/AI%E8%BE%85%E5%8A%A9%E9%9C%80%E6%B1%82%E5%88%86%E6%9E%90%E5%B7%A5%E4%BD%9C%E6%A8%A1%E5%BC%8F.md)
+- 想看 AI 辅助写需求的实际经验 → [`../teams/context/experience/AI辅助需求分析工作模式.md`](../spec/teams/context/experience/AI%E8%BE%85%E5%8A%A9%E9%9C%80%E6%B1%82%E5%88%86%E6%9E%90%E5%B7%A5%E4%BD%9C%E6%A8%A1%E5%BC%8F.md)
