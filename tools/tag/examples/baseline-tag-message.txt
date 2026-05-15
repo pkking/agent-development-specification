@@ -1,0 +1,18 @@
+{tag} — 数据中台基线版本
+
+发布日期：{date}
+仓库：{owner}/{repo}（{branch} 分支 @ {sha_short}）
+角色：{role_label}
+
+这是首个正式基线发布（baseline release）。{tag} 是后续所有补丁 / 功能 / 重构的稳定参考点：
+
+- 任何后续发布（v1.0.x / v1.y.0 / v2.0.0）须能从本基线清晰追溯改动
+- 生产回滚 / 故障复现默认回到本基线 SHA
+- 兼容性问题：先验证回到本基线可复现，再分析增量改动
+
+本仓本次包含：
+{capability}
+
+完整跨仓兼容性矩阵：见 om-datacenter umbrella 仓 {tag} release 的「兼容性矩阵」段。
+
+发布工具：opensourceways/agent-development-specification/tools/tag/release.py
