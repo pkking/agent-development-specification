@@ -22,7 +22,7 @@ on:
         description: 'Fetch depth for checkout (0 for full history needed by incremental coverage)'
         required: false
         type: string
-        default: '1'
+        default: '0'
     secrets:
       gh-token:
         description: 'GitHub token for accessing private repositories'
@@ -35,7 +35,7 @@ env:
   GOPRIVATE: github.com/opensourceways/*
   GONOSUMDB: github.com/opensourceways/*
   GOPROXY: https://goproxy.cn,direct
-  # Coverage thresholds (fixed for all projects)
+  # Coverage thresholds (defined at organization level, not configurable per project)
   FULL_COVERAGE_THRESHOLD: 10.0
   INC_COVERAGE_THRESHOLD: 80.0
   TEST_PACKAGES: ${{ inputs.test-packages }}

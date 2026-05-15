@@ -36,7 +36,7 @@ run_coverage_test() {
     export GOPROXY=${GOPROXY:-https://goproxy.cn,direct}
     
     # Run tests with proper error handling
-    if ! go test -v -coverprofile="$COVERAGE_FILE" $GO_TEST_FLAGS $TEST_PACKAGES; then
+    if ! go test -v -coverprofile="$COVERAGE_FILE" $GO_TEST_FLAGS "$TEST_PACKAGES"; then
         log_fail "Go test execution failed"
         return 1
     fi
@@ -60,7 +60,8 @@ calculate_full_coverage() {
     fi
     
     # Extract total coverage percentage
-    local coverage=$(go tool cover -func="$coverage_file" | grep total | awk '{print $3}' | sed 's/%//')
+    coverage=$(go tool cover -func="$coverage_file" | grep total | awk '{print $3}' | sed 's/%//')
+    full_cov="$coverage"
     
     if [ -z "$coverage" ]; then
         log_fail "Unable to parse full coverage"
@@ -69,8 +70,8 @@ calculate_full_coverage() {
     
     echo ">>> Full Coverage: ${coverage}%"
     
-    # Check threshold
-    if awk "BEGIN { exit !($coverage < $FULL_THRESHOLD) }"; then
+    # Check threshold (use awk -v for safe variable passing)
+    if awk -v cov="$coverage" -v th="$FULL_THRESHOLD" 'BEGIN { exit !(cov < th) }'; then
         log_fail "Full coverage below threshold (${coverage}% < ${FULL_THRESHOLD}%)"
         GLOBAL_SUCCESS=false
         return 1
@@ -108,7 +109,6 @@ calculate_incremental_coverage() {
         active == 1 && /^@@/ {
             split($3, a, ",");
             line = substr(a[1], 2);
-            if (index(line, ",") > 0) line = substr(line, 1, index(line, ",")-1);
             next
         }
         
@@ -156,6 +156,8 @@ calculate_incremental_coverage() {
     declare -A coverage_blocks_by_file
     while IFS= read -r cover_line; do
         [[ -z "$cover_line" ]] && continue
+        # Skip coverage file header line (mode: set)
+        [[ "$cover_line" == mode:* ]] && continue
         local file_path="${cover_line%%:*}"
         local data="${cover_line##*:}"
         coverage_blocks_by_file[$file_path]+="${data}\n"
@@ -212,7 +214,7 @@ calculate_incremental_coverage() {
     echo "Incremental Coverage Report (Block-based):"
     
     if [ "$total_inc_stmts" -eq 0 ]; then
-        local inc_cov="100.0"
+        inc_cov="100.0"
         local status="PASS"
         log_warn "No incremental statements to cover, default pass"
     else
@@ -221,7 +223,7 @@ calculate_incremental_coverage() {
             printf "%.1f|%s", rate, (rate < th ? "FAIL" : "PASS");
         }')
         
-        local inc_cov="${result%|*}"
+        inc_cov="${result%|*}"
         local status="${result#*|}"
         
         echo "Total statements: $total_inc_stmts"
@@ -253,7 +255,10 @@ generate_diff_file() {
         log_info "GitHub Actions: base=$base_ref, head=$head_ref"
         
         git fetch origin "$base_ref" 2>/dev/null || true
-        git diff "origin/$base_ref"..."$head_ref" > "$output_file" 2>/dev/null || git diff HEAD > "$output_file"
+        if ! git diff "origin/$base_ref"..."$head_ref" > "$output_file" 2>/dev/null; then
+            log_fail "Failed to generate diff. Check fetch-depth."
+            return 1
+        fi
     else
         # Local environment
         log_info "Local: using git diff HEAD~1"
@@ -313,7 +318,6 @@ main() {
     # 2. Calculate full coverage
     echo ""
     calculate_full_coverage "$COVERAGE_FILE"
-    local full_cov=$(go tool cover -func="$COVERAGE_FILE" | grep total | awk '{print $3}' | sed 's/%//')
     
     # 3. Generate diff and calculate incremental coverage
     echo ""
