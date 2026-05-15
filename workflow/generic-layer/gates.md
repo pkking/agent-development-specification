@@ -4,12 +4,12 @@
 
 ## 1. 4 项门禁
 
-| 门禁 | 工具 | 失败行为 |
-|---|---|---|
+| 门禁         | 工具                                                                                                | 失败行为                           |
+| ------------ | --------------------------------------------------------------------------------------------------- | ---------------------------------- |
 | 敏感信息检测 | gitleaks（详见 [`../../teams/security-gates/Gitleaks.md`](../../teams/security-gates/Gitleaks.md)） | 评论标记 → orchestrator 进入修复轮 |
-| 设计文档检测 | 自研 `docs-check`（要求 PR 含 `docs/architecture.md` 或 `docs/api-spec.md` 改动） | 同上 |
-| 漏洞扫描 | SAST（详见 [`../../teams/security-gates/SAST.md`](../../teams/security-gates/SAST.md)） | 同上 |
-| License 合规 | `licenses-check`（黑白名单见 [`../../src/gates/lib.sh`](../../src/gates/lib.sh)） | 同上 |
+| 设计文档检测 | 自研 `docs-check`（要求 PR 含 `docs/architecture.md` 或 `docs/api-spec.md` 改动）                   | 同上                               |
+| 漏洞扫描     | SAST（详见 [`../../teams/security-gates/SAST.md`](../../teams/security-gates/SAST.md)）             | 同上                               |
+| License 合规 | `licenses-check`（黑白名单见 [`../../src/gates/lib.sh`](../../src/gates/lib.sh)）                   | 同上                               |
 
 ## 2. 单 PR 执行
 
@@ -22,14 +22,14 @@ gates/run.sh
 
 ## 3. 退出码
 
-| 退出码 | 含义 |
-|---|---|
-| 0 | 全过，可进 review |
-| 10 | 敏感信息检测失败 |
-| 20 | 设计文档缺失 |
-| 30 | 漏洞检测失败 |
-| 40 | License 不合规 |
-| 99 | 内部错误 |
+| 退出码 | 含义              |
+| ------ | ----------------- |
+| 0      | 全过，可进 review |
+| 10     | 敏感信息检测失败  |
+| 20     | 设计文档缺失      |
+| 30     | 漏洞检测失败      |
+| 40     | License 不合规    |
+| 99     | 内部错误          |
 
 ## 4. 与 4 agent 协同
 

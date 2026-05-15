@@ -10,6 +10,7 @@
 **第一份且唯一必读文档**：[`architecture.md`](architecture.md)
 
 一份文档讲清楚：
+
 - 每一阶段做什么（人做的 + AI 做的）
 - 每一步用什么 prompt / 什么 runner / 什么 secret / 什么脚本 / 什么规范
 - 每一步在什么目录跑、回显是什么、下一步是什么
@@ -19,14 +20,14 @@
 
 ## 子目录导航
 
-| 子目录 | 内容 | 什么时候看 |
-|---|---|---|
-| [`generic-layer/`](generic-layer/) | **通用机制**（runner / deployer / orchestrator / agents / gates / tests / workflow 骨架 / credentials 规范）| 想理解流水线内部组件 |
-| [`stage-flow/`](stage-flow/) | **端到端阶段**（issue 提交 / accept 门禁 / 菜单触发 / 3 个流程）| 想理解人 + AI 在每个阶段做什么 |
-| [`project-layer/`](project-layer/) | **项目接线方法**（A/B 档接入 / CLAUDE.md spec / skills spec / preview 规范 / caller workflow 规范）| 想接入新项目 |
-| [`testing-strategy.md`](testing-strategy.md) | 跨项目测试策略（UT / 功能 / 集成 / 前端 / 接口 / 其他服务） | 写测试 / 跑测试 |
-| [`pr-comment-protocol.md`](pr-comment-protocol.md) | PR / issue 评论模板 + 调 gh CLI / API + token 配置 | 自动评论怎么实现 |
-| [`release-process.md`](release-process.md) | 发布流程：白名单 / 灰度 / promote / cleanup / 回滚 | 上线相关 |
+| 子目录                                             | 内容                                                                                                         | 什么时候看                     |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------ |
+| [`generic-layer/`](generic-layer/)                 | **通用机制**（runner / deployer / orchestrator / agents / gates / tests / workflow 骨架 / credentials 规范） | 想理解流水线内部组件           |
+| [`stage-flow/`](stage-flow/)                       | **端到端阶段**（issue 提交 / accept 门禁 / 菜单触发 / 3 个流程）                                             | 想理解人 + AI 在每个阶段做什么 |
+| [`project-layer/`](project-layer/)                 | **项目接线方法**（A/B 档接入 / CLAUDE.md spec / skills spec / preview 规范 / caller workflow 规范）          | 想接入新项目                   |
+| [`testing-strategy.md`](testing-strategy.md)       | 跨项目测试策略（UT / 功能 / 集成 / 前端 / 接口 / 其他服务）                                                  | 写测试 / 跑测试                |
+| [`pr-comment-protocol.md`](pr-comment-protocol.md) | PR / issue 评论模板 + 调 gh CLI / API + token 配置                                                           | 自动评论怎么实现               |
+| [`release-process.md`](release-process.md)         | 发布流程：白名单 / 灰度 / promote / cleanup / 回滚                                                           | 上线相关                       |
 
 ## 设计原则
 

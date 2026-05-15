@@ -12,20 +12,20 @@
 
 ## 2. 它干的两件事
 
-| Job | 触发条件 | 做什么 |
-|---|---|---|
-| `menu` | issue 同时具备 `accepted` 标签 + 含 `[<服务名>需求]` 评论时 | 在该 issue 贴一条「可用命令菜单」（列出 `[<服务名>需求分析]` / `[<服务名>需求实现]` / `[<服务名>需求上线]` 各干啥），含 `<!-- DATACENTER_MENU -->` 锚点防重复贴 |
-| `forward` | issue 评论命中 3 个触发词之一 | 通过 `repository_dispatch` POST 到 umbrella 仓 `/repos/<umbrella>/dispatches`，事件类型见下表 |
+| Job       | 触发条件                                                    | 做什么                                                                                                                                                          |
+| --------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `menu`    | issue 同时具备 `accepted` 标签 + 含 `[<服务名>需求]` 评论时 | 在该 issue 贴一条「可用命令菜单」（列出 `[<服务名>需求分析]` / `[<服务名>需求实现]` / `[<服务名>需求上线]` 各干啥），含 `<!-- DATACENTER_MENU -->` 锚点防重复贴 |
+| `forward` | issue 评论命中 3 个触发词之一                               | 通过 `repository_dispatch` POST 到 umbrella 仓 `/repos/<umbrella>/dispatches`，事件类型见下表                                                                   |
 
 ## 3. 触发词 → event_type 映射
 
 每条触发评论的 event_type（umbrella 仓的 caller workflow 会按这些 event_type 选 issue-1/2/3 yml）：
 
-| 触发评论 | event_type | 触发 umbrella 仓的哪个 workflow |
-|---|---|---|
-| `[<服务名>需求分析]` / `[<别名>需求分析]` | `backlog_analyze` | [issue-1-analyze-requirement.yml](../../projects/om-datacenter/.github/workflows/issue-1-analyze-requirement.yml) |
+| 触发评论                                  | event_type          | 触发 umbrella 仓的哪个 workflow                                                                                       |
+| ----------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `[<服务名>需求分析]` / `[<别名>需求分析]` | `backlog_analyze`   | [issue-1-analyze-requirement.yml](../../projects/om-datacenter/.github/workflows/issue-1-analyze-requirement.yml)     |
 | `[<服务名>需求实现]` / `[<别名>需求实现]` | `backlog_implement` | [issue-2-implement-and-preview.yml](../../projects/om-datacenter/.github/workflows/issue-2-implement-and-preview.yml) |
-| `[<服务名>需求上线]` / `[<别名>合入上线]` | `backlog_merge` | [issue-3-merge-and-deploy.yml](../../projects/om-datacenter/.github/workflows/issue-3-merge-and-deploy.yml) |
+| `[<服务名>需求上线]` / `[<别名>合入上线]` | `backlog_merge`     | [issue-3-merge-and-deploy.yml](../../projects/om-datacenter/.github/workflows/issue-3-merge-and-deploy.yml)           |
 
 `client_payload` 里带：`source_repo` / `issue_number` / `issue_title` / `comment_id` / `comment_body` / `trigger_user`。
 
@@ -33,19 +33,19 @@
 
 只需 1 个 Secret 配在**来源仓**：
 
-| Secret | 必填 | 用途 | 怎么拿 |
-|---|---|---|---|
-| `DATACENTER_DISPATCH_TOKEN` | ✓ | GitHub PAT，对 umbrella 仓（`opensourceways/om-datacenter`）有 `repo` scope（fine-grained：`contents: write` + `metadata: read`）| Settings → Developer settings → Personal access tokens |
+| Secret                      | 必填 | 用途                                                                                                                              | 怎么拿                                                 |
+| --------------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `DATACENTER_DISPATCH_TOKEN` | ✓    | GitHub PAT，对 umbrella 仓（`opensourceways/om-datacenter`）有 `repo` scope（fine-grained：`contents: write` + `metadata: read`） | Settings → Developer settings → Personal access tokens |
 
 注：本 workflow 不需要 LLM token / 不需要 kubeconfig — 它就是个事件转发器，逻辑极薄。
 
 ## 5. 谁运行它
 
-| 项 | 值 |
-|---|---|
-| runs-on | `ubuntu-latest`（GitHub 托管，**不用 self-hosted**）|
-| timeout | 2 min / job |
-| permissions | `contents: read` + `issues: write` |
+| 项          | 值                                                   |
+| ----------- | ---------------------------------------------------- |
+| runs-on     | `ubuntu-latest`（GitHub 托管，**不用 self-hosted**） |
+| timeout     | 2 min / job                                          |
+| permissions | `contents: read` + `issues: write`                   |
 
 ## 6. 在流水线全景里的位置
 

@@ -13,13 +13,13 @@
 
 ## 3. 输入
 
-| 字段 | 类型 | 必填 | 说明 |
-|---|---|---|---|
-| `community_name` | string | ✓ | 社区名（kebab-case），如 `mindspore` |
-| `display_name` | string | ✓ | 展示名，如 `MindSpore` |
-| `repo_platform` | enum | ✓ | `github` / `gitee` / `gitcode` |
-| `repo_list` | list[str] | ✓ | 接入的仓库清单 |
-| `meeting_source` | string | 可选 | 会议数据源（如有） |
+| 字段             | 类型      | 必填 | 说明                                 |
+| ---------------- | --------- | ---- | ------------------------------------ |
+| `community_name` | string    | ✓    | 社区名（kebab-case），如 `mindspore` |
+| `display_name`   | string    | ✓    | 展示名，如 `MindSpore`               |
+| `repo_platform`  | enum      | ✓    | `github` / `gitee` / `gitcode`       |
+| `repo_list`      | list[str] | ✓    | 接入的仓库清单                       |
+| `meeting_source` | string    | 可选 | 会议数据源（如有）                   |
 
 ## 4. 步骤
 

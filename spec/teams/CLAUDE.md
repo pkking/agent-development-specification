@@ -6,13 +6,13 @@
 
 ## 1. 团队工作原则
 
-| 原则 | 含义 |
-|---|---|
-| **以 issue 为中心** | 所有改动从 backlog issue 起，PR 必须关联 issue；issue 完整流程见 [`context/team/issue-workflow-guide.md`](context/team/issue-workflow-guide.md) |
-| **文档优先** | 写代码前先写需求文档 / 架构设计，PR 必带文档变更；模板见 [`templates/`](templates/) |
-| **AI 主导但人把关** | AI 写代码 / 文档 / 跑测试 / 起预览；但每个阶段必须人评论或合入触发，AI 不向生产推 |
-| **规范化优先复用** | 写新代码 / 文档前先查 [`standards/`](standards/)、[`templates/`](templates/)、[`context/experience/`](context/experience/)，不重造轮子 |
-| **质量门禁不可绕** | 4 项确定性门禁（敏感信息 / 设计文档 / 漏洞 / License） + N 轮 AI 对抗修复，详见 [`security-gates/`](security-gates/) 与 [`../pipeline/generic-layer/gates.md`](../pipeline/generic-layer/gates.md) |
+| 原则                | 含义                                                                                                                                                                                               |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **以 issue 为中心** | 所有改动从 backlog issue 起，PR 必须关联 issue；issue 完整流程见 [`context/team/issue-workflow-guide.md`](context/team/issue-workflow-guide.md)                                                    |
+| **文档优先**        | 写代码前先写需求文档 / 架构设计，PR 必带文档变更；模板见 [`templates/`](templates/)                                                                                                                |
+| **AI 主导但人把关** | AI 写代码 / 文档 / 跑测试 / 起预览；但每个阶段必须人评论或合入触发，AI 不向生产推                                                                                                                  |
+| **规范化优先复用**  | 写新代码 / 文档前先查 [`standards/`](standards/)、[`templates/`](templates/)、[`context/experience/`](context/experience/)，不重造轮子                                                             |
+| **质量门禁不可绕**  | 4 项确定性门禁（敏感信息 / 设计文档 / 漏洞 / License） + N 轮 AI 对抗修复，详见 [`security-gates/`](security-gates/) 与 [`../pipeline/generic-layer/gates.md`](../pipeline/generic-layer/gates.md) |
 
 ## 2. 强制约束（不可违反）
 
@@ -46,30 +46,30 @@
 用户在 backlog issue 上的评论触发词由项目层定义（见 `../projects/<project>/README.md` 的「触发词」段）。
 团队层不约束具体触发词，但要求 3 个流程职责固定：
 
-| 流程 | 入口 | 产物 |
-|---|---|---|
-| 流程 1 需求分析 | `[<服务名>需求分析]` | 需求 PR 到 backlog 仓 |
-| 流程 2 实现 + 预览 | `[<服务名>需求实现]` | dev 仓 PR + 预览 URL |
-| 流程 3 合入 + 上线 | `[<服务名>需求上线]`（白名单） | 合 PR + beta 部署 |
+| 流程               | 入口                           | 产物                  |
+| ------------------ | ------------------------------ | --------------------- |
+| 流程 1 需求分析    | `[<服务名>需求分析]`           | 需求 PR 到 backlog 仓 |
+| 流程 2 实现 + 预览 | `[<服务名>需求实现]`           | dev 仓 PR + 预览 URL  |
+| 流程 3 合入 + 上线 | `[<服务名>需求上线]`（白名单） | 合 PR + beta 部署     |
 
 详细每步：[`../pipeline/architecture.md`](../pipeline/architecture.md)
 
 ## 3. 规范导航
 
-| 我要查什么 | 看这里 |
-|---|---|
-| 编码风格 / 命名 | [`standards/coding.md`](standards/coding.md) |
-| 提交 / 分支 / PR 规范 | [`standards/git-workflow.md`](standards/git-workflow.md) |
-| API 设计 | [`standards/api-design.md`](standards/api-design.md) + [`context/team/api-security.md`](context/team/api-security.md) |
-| 数据库 / 迁移 | [`standards/database.md`](standards/database.md) |
-| 可观测性（日志 / 指标 / 追踪） | [`standards/observability.md`](standards/observability.md) |
-| 安全（编码 / 设计 / 上线） | [`standards/security.md`](standards/security.md) + [`context/team/安全编码规范.md`](context/team/安全编码规范.md) |
-| 测试（写法 / 分层 / 覆盖率） | [`standards/testing.md`](standards/testing.md) |
-| 架构设计 | [`standards/architecture.md`](standards/architecture.md) |
-| 发布 / 上线 | [`standards/release.md`](standards/release.md) |
-| 需求 / 架构 / 测试 / 发布 / 复盘文档模板 | [`templates/`](templates/) |
-| AI 辅助经验沉淀 | [`context/experience/`](context/experience/) |
-| 团队级 prompt（被流水线引用） | [`prompts/`](prompts/) |
+| 我要查什么                               | 看这里                                                                                                                |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| 编码风格 / 命名                          | [`standards/coding.md`](standards/coding.md)                                                                          |
+| 提交 / 分支 / PR 规范                    | [`standards/git-workflow.md`](standards/git-workflow.md)                                                              |
+| API 设计                                 | [`standards/api-design.md`](standards/api-design.md) + [`context/team/api-security.md`](context/team/api-security.md) |
+| 数据库 / 迁移                            | [`standards/database.md`](standards/database.md)                                                                      |
+| 可观测性（日志 / 指标 / 追踪）           | [`standards/observability.md`](standards/observability.md)                                                            |
+| 安全（编码 / 设计 / 上线）               | [`standards/security.md`](standards/security.md) + [`context/team/安全编码规范.md`](context/team/安全编码规范.md)     |
+| 测试（写法 / 分层 / 覆盖率）             | [`standards/testing.md`](standards/testing.md)                                                                        |
+| 架构设计                                 | [`standards/architecture.md`](standards/architecture.md)                                                              |
+| 发布 / 上线                              | [`standards/release.md`](standards/release.md)                                                                        |
+| 需求 / 架构 / 测试 / 发布 / 复盘文档模板 | [`templates/`](templates/)                                                                                            |
+| AI 辅助经验沉淀                          | [`context/experience/`](context/experience/)                                                                          |
+| 团队级 prompt（被流水线引用）            | [`prompts/`](prompts/)                                                                                                |
 
 ## 4. 关联
 

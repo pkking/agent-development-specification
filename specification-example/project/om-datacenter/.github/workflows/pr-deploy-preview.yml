@@ -11,13 +11,13 @@ on:
   workflow_dispatch:
     inputs:
       repo:
-        description: 'dev 仓 owner/name，如 opensourceways/datastat-manage-website'
+        description: "dev 仓 owner/name，如 opensourceways/datastat-manage-website"
         required: true
       pr:
-        description: 'PR 号'
+        description: "PR 号"
         required: true
       action:
-        description: 'deploy / cleanup / status'
+        description: "deploy / cleanup / status"
         required: false
         default: deploy
   repository_dispatch:

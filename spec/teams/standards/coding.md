@@ -13,13 +13,13 @@
 
 ## 2. 各语言细节
 
-| 语言 | 风格指南 |
-|---|---|
-| Python | PEP 8；行宽 100；类型注解必填 (mypy --strict)；`from __future__ import annotations` 起头 |
-| JS / TS | ESLint airbnb 基线；TS 全显式类型；禁用 `any` |
-| Go | `gofmt` + `golangci-lint run`；包名小写 |
-| Shell | `bash` 不写 `sh`；`set -euo pipefail` 起头；变量必加 `"$VAR"` |
-| YAML | 2 空格；key 用 kebab-case；workflow 限定 `runs-on` |
+| 语言    | 风格指南                                                                                 |
+| ------- | ---------------------------------------------------------------------------------------- |
+| Python  | PEP 8；行宽 100；类型注解必填 (mypy --strict)；`from __future__ import annotations` 起头 |
+| JS / TS | ESLint airbnb 基线；TS 全显式类型；禁用 `any`                                            |
+| Go      | `gofmt` + `golangci-lint run`；包名小写                                                  |
+| Shell   | `bash` 不写 `sh`；`set -euo pipefail` 起头；变量必加 `"$VAR"`                            |
+| YAML    | 2 空格；key 用 kebab-case；workflow 限定 `runs-on`                                       |
 
 ## 3. 安全编码
 

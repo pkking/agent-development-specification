@@ -79,14 +79,14 @@ deleted_at  TIMESTAMP NULL                               -- 软删除标记
 
 ### 类型选择
 
-| 场景 | 推荐类型 | 避免 |
-| --- | --- | --- |
-| 主键 | UUID / BIGINT | INT（容量不足） |
-| 金额 | DECIMAL(19,4) | FLOAT / DOUBLE |
-| 状态枚举 | VARCHAR + 应用层约束 | 数据库 ENUM（变更困难） |
-| JSON 数据 | JSONB（PostgreSQL） | TEXT 存 JSON |
-| 长文本 | TEXT | VARCHAR(9999) |
-| 布尔 | BOOLEAN | TINYINT |
+| 场景      | 推荐类型             | 避免                    |
+| --------- | -------------------- | ----------------------- |
+| 主键      | UUID / BIGINT        | INT（容量不足）         |
+| 金额      | DECIMAL(19,4)        | FLOAT / DOUBLE          |
+| 状态枚举  | VARCHAR + 应用层约束 | 数据库 ENUM（变更困难） |
+| JSON 数据 | JSONB（PostgreSQL）  | TEXT 存 JSON            |
+| 长文本    | TEXT                 | VARCHAR(9999)           |
+| 布尔      | BOOLEAN              | TINYINT                 |
 
 ### 约束要求
 

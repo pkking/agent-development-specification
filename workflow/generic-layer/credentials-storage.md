@@ -4,24 +4,24 @@
 
 ## 1. 三档分类
 
-| 档位 | 用途 | 注入方式 |
-|---|---|---|
-| GitHub Secret | CI / runner 启动期需要的 token | workflow `env:` 或 runner pod 的 `secretRef` |
-| K8s Secret | 容器运行时 long-lived 凭据 | `envFrom: secretRef` / `volumeMounts` |
+| 档位               | 用途                                 | 注入方式                                                                     |
+| ------------------ | ------------------------------------ | ---------------------------------------------------------------------------- |
+| GitHub Secret      | CI / runner 启动期需要的 token       | workflow `env:` 或 runner pod 的 `secretRef`                                 |
+| K8s Secret         | 容器运行时 long-lived 凭据           | `envFrom: secretRef` / `volumeMounts`                                        |
 | Vault sidecar 注入 | 高敏感凭据（DB root 密码、加密私钥） | `vault.hashicorp.com/agent-inject-secret-application.yml: internal/data/...` |
 
 ## 2. 凭据清单（流水线层）
 
-| 名称 | 档位 | 用途 |
-|---|---|---|
-| `GITHUB_TOKEN` | GitHub Secret（org 级） | gh CLI / API 调用，必含 `workflow` scope |
-| `GITCODE_TOKEN` | GitHub Secret | 镜像源代码同步到 GitCode |
-| `ANTHROPIC_API_KEY` | GitHub Secret + K8s Secret | runner 内 Claude CLI |
-| `ANTHROPIC_BASE_URL` | configmap | runner 内 Claude endpoint |
-| `ANTHROPIC_MODEL` | configmap | runner 内 model id |
-| `REGISTRY_USER` / `REGISTRY_PASS` | K8s Secret（runner 用） | 推镜像到 registry |
-| `KUBECONFIG` | K8s Secret（k8s-deployer 用） | 调 k8s API |
-| `VAULT_TOKEN` | K8s Secret | 启 vault sidecar |
+| 名称                              | 档位                          | 用途                                     |
+| --------------------------------- | ----------------------------- | ---------------------------------------- |
+| `GITHUB_TOKEN`                    | GitHub Secret（org 级）       | gh CLI / API 调用，必含 `workflow` scope |
+| `GITCODE_TOKEN`                   | GitHub Secret                 | 镜像源代码同步到 GitCode                 |
+| `ANTHROPIC_API_KEY`               | GitHub Secret + K8s Secret    | runner 内 Claude CLI                     |
+| `ANTHROPIC_BASE_URL`              | configmap                     | runner 内 Claude endpoint                |
+| `ANTHROPIC_MODEL`                 | configmap                     | runner 内 model id                       |
+| `REGISTRY_USER` / `REGISTRY_PASS` | K8s Secret（runner 用）       | 推镜像到 registry                        |
+| `KUBECONFIG`                      | K8s Secret（k8s-deployer 用） | 调 k8s API                               |
+| `VAULT_TOKEN`                     | K8s Secret                    | 启 vault sidecar                         |
 
 ## 3. 项目层凭据清单
 

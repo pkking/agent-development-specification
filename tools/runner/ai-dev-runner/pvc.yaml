@@ -10,8 +10,8 @@ metadata:
     app: ai-dev-runner
 spec:
   accessModes:
-    - ReadWriteMany     # 多个 runner pod 并发跑不同 issue 时共用同一 PVC（按 per-issue 子目录隔离）
+    - ReadWriteMany # 多个 runner pod 并发跑不同 issue 时共用同一 PVC（按 per-issue 子目录隔离）
   resources:
     requests:
-      storage: 100Gi    # 按 issue 数 × 5 个 dev 仓 × 仓平均大小估
-  storageClassName: <your-rwx-storage-class>   # 按集群实际改：cephfs / nfs / cubefs / longhorn-rwx ...
+      storage: 100Gi # 按 issue 数 × 5 个 dev 仓 × 仓平均大小估
+  storageClassName: <your-rwx-storage-class> # 按集群实际改：cephfs / nfs / cubefs / longhorn-rwx ...

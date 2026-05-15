@@ -23,26 +23,27 @@
 
 ### ConfigMap（非敏感，可入仓）— [`configmap.yaml`](configmap.yaml)
 
-| 字段 | 必填 | 含义 | 例 |
-|---|---|---|---|
-| `GH_OWNER` | ✓ | runner 注册到的 GitHub Org / 个人账号 | `opensourceways` |
-| `GH_REPO` | ✓ | runner 注册到的仓库（也可改 Org 级） | `om-datacenter` |
-| `ANTHROPIC_BASE_URL` | 用 Claude CLI 时必填 | LLM endpoint | `https://api.anthropic.com` |
-| `ANTHROPIC_MODEL` | 用 Claude CLI 时必填 | 模型 id | `claude-opus-4-7` |
+| 字段                 | 必填                 | 含义                                  | 例                          |
+| -------------------- | -------------------- | ------------------------------------- | --------------------------- |
+| `GH_OWNER`           | ✓                    | runner 注册到的 GitHub Org / 个人账号 | `opensourceways`            |
+| `GH_REPO`            | ✓                    | runner 注册到的仓库（也可改 Org 级）  | `om-datacenter`             |
+| `ANTHROPIC_BASE_URL` | 用 Claude CLI 时必填 | LLM endpoint                          | `https://api.anthropic.com` |
+| `ANTHROPIC_MODEL`    | 用 Claude CLI 时必填 | 模型 id                               | `claude-opus-4-7`           |
 
 ### Secret（敏感，**不入仓**，手工 `kubectl create secret`）
 
-| Secret 字段 | 必填 | 用途 | 从哪拿 |
-|---|---|---|---|
-| [`GH_RUNNER_TOKEN`](../../../pipeline/generic-layer/credentials-storage.md) | ✓ | 向 GitHub 注册 self-hosted runner 的一次性 token | GitHub: Settings → Actions → Runners → New self-hosted runner |
-| [`ANTHROPIC_API_KEY`](../../../pipeline/generic-layer/credentials-storage.md) | 用 Claude CLI 时 | 4 agent 调 LLM | console.anthropic.com → API Keys |
-| [`OPENCODE_API_KEY`](../../../pipeline/generic-layer/credentials-storage.md) | 用 opencode 时（om-datacenter 当前用） | 同上，opencode 走它的 broker | 团队 LLM 平台 |
-| [`BACKLOG_REPO_TOKEN`](../../../pipeline/generic-layer/credentials-storage.md) | ✓ | 跨仓 clone backlog / push 需求 PR / merge dev 仓 PR | GitHub PAT（fine-grained：对相关仓 `Contents: rw` + `Pull requests: rw` + `Issues: rw`） |
-| [`CROSS_REPO_TOKEN`](../../../pipeline/generic-layer/credentials-storage.md) | 流程 2 用 | clone 各 dev 子仓 + 开 PR；与 `BACKLOG_REPO_TOKEN` 任一即可（om-datacenter yml 里写成二选一 fallback） | 同上 |
-| [`AI_TEST_KUBECONFIG`](../../../pipeline/generic-layer/credentials-storage.md) | 流程 2/3 调 deploy.py 时 | 起预览 / 清理预览 | 集群 admin 给你的 kubeconfig（base64 编码后存入 Secret） |
-| [`LOCAL_DB_PASSWORD`](../../../pipeline/generic-layer/credentials-storage.md) | 仅 APIMagic per-PR 模式 | 建 `magic_api_file_v2_pr<N>` 表 | PG admin 给的密码 |
+| Secret 字段                                                                    | 必填                                   | 用途                                                                                                   | 从哪拿                                                                                   |
+| ------------------------------------------------------------------------------ | -------------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| [`GH_RUNNER_TOKEN`](../../../pipeline/generic-layer/credentials-storage.md)    | ✓                                      | 向 GitHub 注册 self-hosted runner 的一次性 token                                                       | GitHub: Settings → Actions → Runners → New self-hosted runner                            |
+| [`ANTHROPIC_API_KEY`](../../../pipeline/generic-layer/credentials-storage.md)  | 用 Claude CLI 时                       | 4 agent 调 LLM                                                                                         | console.anthropic.com → API Keys                                                         |
+| [`OPENCODE_API_KEY`](../../../pipeline/generic-layer/credentials-storage.md)   | 用 opencode 时（om-datacenter 当前用） | 同上，opencode 走它的 broker                                                                           | 团队 LLM 平台                                                                            |
+| [`BACKLOG_REPO_TOKEN`](../../../pipeline/generic-layer/credentials-storage.md) | ✓                                      | 跨仓 clone backlog / push 需求 PR / merge dev 仓 PR                                                    | GitHub PAT（fine-grained：对相关仓 `Contents: rw` + `Pull requests: rw` + `Issues: rw`） |
+| [`CROSS_REPO_TOKEN`](../../../pipeline/generic-layer/credentials-storage.md)   | 流程 2 用                              | clone 各 dev 子仓 + 开 PR；与 `BACKLOG_REPO_TOKEN` 任一即可（om-datacenter yml 里写成二选一 fallback） | 同上                                                                                     |
+| [`AI_TEST_KUBECONFIG`](../../../pipeline/generic-layer/credentials-storage.md) | 流程 2/3 调 deploy.py 时               | 起预览 / 清理预览                                                                                      | 集群 admin 给你的 kubeconfig（base64 编码后存入 Secret）                                 |
+| [`LOCAL_DB_PASSWORD`](../../../pipeline/generic-layer/credentials-storage.md)  | 仅 APIMagic per-PR 模式                | 建 `magic_api_file_v2_pr<N>` 表                                                                        | PG admin 给的密码                                                                        |
 
 **轮换 / 失效处理**：
+
 - `GH_RUNNER_TOKEN` 一次性；过期由 entrypoint.sh 自动重 register（用同一份 Secret 重启 pod 就行）
 - 其它 token 失效：更新 Secret → `kubectl rollout restart deployment/ai-dev-runner -n ci-runners`
 
@@ -84,25 +85,25 @@ deployment.yaml 里有 hostPath 挂 `/var/run/docker.sock` 到容器内。**原�
 
 ## 资源 / 挂载（详见 [`deployment.yaml`](deployment.yaml)）
 
-| 项 | 值 |
-|---|---|
-| requests | cpu 500m / memory 1Gi |
-| limits | cpu 4000m / memory 8Gi |
-| `/var/run/docker.sock` | hostPath，让 runner build 子镜像（见上「为什么要挂」） |
-| `/workspaces` | PVC，流程 2 的 per-issue 工作区（`$WORKSPACE_DIR`），跨 job 持久 |
+| 项                     | 值                                                               |
+| ---------------------- | ---------------------------------------------------------------- |
+| requests               | cpu 500m / memory 1Gi                                            |
+| limits                 | cpu 4000m / memory 8Gi                                           |
+| `/var/run/docker.sock` | hostPath，让 runner build 子镜像（见上「为什么要挂」）           |
+| `/workspaces`          | PVC，流程 2 的 per-issue 工作区（`$WORKSPACE_DIR`），跨 job 持久 |
 
 ## 文件清单
 
-| 文件 | 作用 |
-|---|---|
-| [Dockerfile](Dockerfile) | 镜像定义 |
-| [entrypoint.sh](entrypoint.sh) | 容器入口：用 `GH_RUNNER_TOKEN` 注册 → 跑 `run.sh` |
-| [start-runner.sh](start-runner.sh) | 本地 `docker run` 调试用 |
-| [build-and-push.sh](build-and-push.sh) | 多架构 build + push |
-| [deployment.yaml](deployment.yaml) | K8s Deployment |
-| [rbac.yaml](rbac.yaml) | ServiceAccount + Role + RoleBinding |
-| [configmap.yaml](configmap.yaml) | 非敏感配置 |
-| [pvc.yaml](pvc.yaml) | `/workspaces` 持久卷（流程 2 per-issue 工作区） |
+| 文件                                       | 作用                                                                                                            |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| [Dockerfile](Dockerfile)                   | 镜像定义                                                                                                        |
+| [entrypoint.sh](entrypoint.sh)             | 容器入口：用 `GH_RUNNER_TOKEN` 注册 → 跑 `run.sh`                                                               |
+| [start-runner.sh](start-runner.sh)         | 本地 `docker run` 调试用                                                                                        |
+| [build-and-push.sh](build-and-push.sh)     | 多架构 build + push                                                                                             |
+| [deployment.yaml](deployment.yaml)         | K8s Deployment                                                                                                  |
+| [rbac.yaml](rbac.yaml)                     | ServiceAccount + Role + RoleBinding                                                                             |
+| [configmap.yaml](configmap.yaml)           | 非敏感配置                                                                                                      |
+| [pvc.yaml](pvc.yaml)                       | `/workspaces` 持久卷（流程 2 per-issue 工作区）                                                                 |
 | [secret-example.yaml](secret-example.yaml) | Secret 字段示例（**不要 apply 这个**，复制改值后落本地，加 .gitignore；或直接 `kubectl create secret generic`） |
 
 > 关于 `entrypoint.sh` 里调用的 `./config.sh` 和 `./run.sh`：**不在本仓**，由 Dockerfile 下载 actions-runner tarball 并 `tar xzf` 到 `/home/runner/actions-runner/` 提供（entrypoint 头部注释写了）。entrypoint 加了 preflight 检查，缺则报错退出。

@@ -9,9 +9,9 @@
 
 ### 主分支
 
-| 分支 | 用途 | 保护规则 |
-| --- | --- | --- |
-| `main` | 生产代码，始终可部署 | 禁止直接 push，必须通过 PR 合并 |
+| 分支      | 用途                        | 保护规则                        |
+| --------- | --------------------------- | ------------------------------- |
+| `main`    | 生产代码，始终可部署        | 禁止直接 push，必须通过 PR 合并 |
 | `develop` | 开发主线（如采用 Git Flow） | 禁止直接 push，必须通过 PR 合并 |
 
 > [团队填写] 选择分支模型：
@@ -55,16 +55,16 @@ docs/<short-desc>                 # 纯文档修改
 
 ### Type 类型
 
-| Type | 含义 | 示例 |
-| --- | --- | --- |
-| `feat` | 新功能 | `feat(user): add email verification` |
-| `fix` | Bug 修复 | `fix(order): correct price calculation` |
-| `refactor` | 重构（不改变行为） | `refactor(auth): extract token service` |
-| `docs` | 文档修改 | `docs: update API guide` |
-| `test` | 测试相关 | `test(user): add registration edge cases` |
-| `chore` | 构建、CI、依赖 | `chore: upgrade Go to 1.22` |
-| `perf` | 性能优化 | `perf(query): add index for user lookup` |
-| `ci` | CI/CD 变更 | `ci: add lint step to pipeline` |
+| Type       | 含义               | 示例                                      |
+| ---------- | ------------------ | ----------------------------------------- |
+| `feat`     | 新功能             | `feat(user): add email verification`      |
+| `fix`      | Bug 修复           | `fix(order): correct price calculation`   |
+| `refactor` | 重构（不改变行为） | `refactor(auth): extract token service`   |
+| `docs`     | 文档修改           | `docs: update API guide`                  |
+| `test`     | 测试相关           | `test(user): add registration edge cases` |
+| `chore`    | 构建、CI、依赖     | `chore: upgrade Go to 1.22`               |
+| `perf`     | 性能优化           | `perf(query): add index for user lookup`  |
+| `ci`       | CI/CD 变更         | `ci: add lint step to pipeline`           |
 
 ### 规则
 
@@ -90,12 +90,12 @@ docs/<short-desc>                 # 纯文档修改
 
 ### Review 要求
 
-| 条件 | 要求 |
-| --- | --- |
-| 最少 Reviewer 数 | [团队填写]（建议 1-2 人） |
-| CI 检查 | 必须全部通过（lint + test + build） |
-| 代码覆盖率 | 新代码覆盖率不低于 [团队填写]% |
-| Review 响应 SLA | 提交后 [团队填写] 小时内完成首次 Review |
+| 条件             | 要求                                    |
+| ---------------- | --------------------------------------- |
+| 最少 Reviewer 数 | [团队填写]（建议 1-2 人）               |
+| CI 检查          | 必须全部通过（lint + test + build）     |
+| 代码覆盖率       | 新代码覆盖率不低于 [团队填写]%          |
+| Review 响应 SLA  | 提交后 [团队填写] 小时内完成首次 Review |
 
 ### 合并策略
 

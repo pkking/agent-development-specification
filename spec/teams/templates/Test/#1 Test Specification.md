@@ -9,15 +9,15 @@
 
 ## 2. 每条用例必含字段
 
-| 字段 | 说明 |
-|---|---|
-| 用例 ID | 全仓唯一，建议带模块前缀，如 `auth.login.001` |
-| 对应 task(issueID) 链接 | `<issue-url>`（指向 backlog 仓 issue） |
-| 前置条件 | 数据 / 环境 / 依赖服务状态 |
-| 操作步骤 | 编号步骤，每步一行 |
-| 预期结果 | 可观察、可断言（HTTP 状态码 / DB 行数 / 日志内容） |
-| 优先级 | P0 / P1 / P2 |
-| 类型 | smoke / unit / integration / interface contract / e2e |
+| 字段                    | 说明                                                  |
+| ----------------------- | ----------------------------------------------------- |
+| 用例 ID                 | 全仓唯一，建议带模块前缀，如 `auth.login.001`         |
+| 对应 task(issueID) 链接 | `<issue-url>`（指向 backlog 仓 issue）                |
+| 前置条件                | 数据 / 环境 / 依赖服务状态                            |
+| 操作步骤                | 编号步骤，每步一行                                    |
+| 预期结果                | 可观察、可断言（HTTP 状态码 / DB 行数 / 日志内容）    |
+| 优先级                  | P0 / P1 / P2                                          |
+| 类型                    | smoke / unit / integration / interface contract / e2e |
 
 ## 3. 用例分层
 
@@ -33,4 +33,3 @@
 - 执行报告写法 → [`#1 Test Report.md`](#1%20Test%20Report.md)
 - 测试经验沉淀 → [`../../context/experience/`](../../context/experience/)
 - 通用流水线测试编排 → [`../../../pipeline/generic-layer/tests.md`](../../../pipeline/generic-layer/tests.md)
-

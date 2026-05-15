@@ -13,13 +13,13 @@
 
 ## 3. 入参 / 出参
 
-| 项 | 规则 |
-|---|---|
-| 请求体 | JSON；字段 snake_case 或 camelCase 全仓统一（项目层定）|
-| 错误响应 | `{ "code": "<machine_code>", "message": "<human>", "request_id": "<uuid>" }` |
-| 分页 | `?page=<n>&page_size=<m>`；返回 `total`、`page`、`page_size` |
-| 时间 | ISO 8601 + UTC（`2026-05-07T12:34:56Z`）|
-| 钱 / 精度数值 | 字符串而非 float |
+| 项            | 规则                                                                         |
+| ------------- | ---------------------------------------------------------------------------- |
+| 请求体        | JSON；字段 snake_case 或 camelCase 全仓统一（项目层定）                      |
+| 错误响应      | `{ "code": "<machine_code>", "message": "<human>", "request_id": "<uuid>" }` |
+| 分页          | `?page=<n>&page_size=<m>`；返回 `total`、`page`、`page_size`                 |
+| 时间          | ISO 8601 + UTC（`2026-05-07T12:34:56Z`）                                     |
+| 钱 / 精度数值 | 字符串而非 float                                                             |
 
 ## 4. 安全
 

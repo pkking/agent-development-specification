@@ -143,12 +143,12 @@ func (s *UserService) ListUsers(ctx context.Context, cmd *CmdToListUsers) (Users
 
 **三类可预期错误的转换对照：**
 
-| 底层错误 | 触发操作 | 转换为 | HTTP |
-|----------|---------|--------|------|
-| `ErrorResourceNotFound` | Find | `allerror.NewNotFoundError(code, "", err)` | 404 |
-| `ErrorDuplicateCreating` | Create | `allerror.New(code, "", err)` | 400 |
-| `ErrorConcurrentUpdating` | Save/Delete | `allerror.New(code, "", err)` | 400 |
-| 其他（系统错误） | 任何操作 | 直接 `return err` | 500 |
+| 底层错误                  | 触发操作    | 转换为                                     | HTTP |
+| ------------------------- | ----------- | ------------------------------------------ | ---- |
+| `ErrorResourceNotFound`   | Find        | `allerror.NewNotFoundError(code, "", err)` | 404  |
+| `ErrorDuplicateCreating`  | Create      | `allerror.New(code, "", err)`              | 400  |
+| `ErrorConcurrentUpdating` | Save/Delete | `allerror.New(code, "", err)`              | 400  |
+| 其他（系统错误）          | 任何操作    | 直接 `return err`                          | 500  |
 
 ## Controller 层错误响应
 

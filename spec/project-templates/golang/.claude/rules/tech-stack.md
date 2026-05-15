@@ -4,12 +4,12 @@
 
 以下为**禁止**在未经 Tech Lead 审批的情况下引入的库：
 
-| 类别 | 禁止 | 原因 |
-|------|------|------|
-| Web 框架 | Echo, Fiber, chi | 统一使用 Gin |
-| 日志 | zap, slog, zerolog | 统一使用 logrus |
-| ORM | ent, sqlx, sqlc, 裸 database/sql | 统一使用 GORM v2 |
-| 配置 | viper, envconfig | 统一使用手动解析 |
+| 类别     | 禁止                             | 原因             |
+| -------- | -------------------------------- | ---------------- |
+| Web 框架 | Echo, Fiber, chi                 | 统一使用 Gin     |
+| 日志     | zap, slog, zerolog               | 统一使用 logrus  |
+| ORM      | ent, sqlx, sqlc, 裸 database/sql | 统一使用 GORM v2 |
+| 配置     | viper, envconfig                 | 统一使用手动解析 |
 
 ## 依赖管理
 

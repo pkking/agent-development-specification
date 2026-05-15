@@ -6,13 +6,13 @@
 
 详见 [`../../teams/standards/testing.md`](../../teams/standards/testing.md) 与 [`../testing-strategy.md`](../testing-strategy.md)。
 
-| 层 | 跑哪 | 编排脚本 |
-|---|---|---|
-| smoke | ai-dev-runner 容器内 | `run_layered.sh smoke` |
-| unit (UT) | 同上 | `run_layered.sh unit` |
-| interface contract | 同上 | `run_layered.sh contract` |
-| integration | 预览 namespace | `run_layered.sh integration` |
-| e2e | 预览 namespace | `run_layered.sh e2e` |
+| 层                 | 跑哪                 | 编排脚本                     |
+| ------------------ | -------------------- | ---------------------------- |
+| smoke              | ai-dev-runner 容器内 | `run_layered.sh smoke`       |
+| unit (UT)          | 同上                 | `run_layered.sh unit`        |
+| interface contract | 同上                 | `run_layered.sh contract`    |
+| integration        | 预览 namespace       | `run_layered.sh integration` |
+| e2e                | 预览 namespace       | `run_layered.sh e2e`         |
 
 ## 2. run_layered.sh
 

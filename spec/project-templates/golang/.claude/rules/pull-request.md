@@ -13,6 +13,7 @@
 - 简短描述：祈使句，英文，不加句号，不超过 72 字符
 
 **示例：**
+
 ```
 feat(order): add cancel endpoint
 fix(auth): handle expired token edge case
@@ -29,8 +30,8 @@ docs(rules): add pull request convention
 
 ## 改动内容
 
-<!-- 具体做了什么，使用 bullet list。 -->
--
+## <!-- 具体做了什么，使用 bullet list。 -->
+
 -
 
 ## 注意事项
@@ -41,14 +42,17 @@ docs(rules): add pull request convention
 ### 填写要求
 
 **背景**：
+
 - 说明改动的上下文和动机，而非重复标题
 - 若关联 issue 或需求，附上链接
 
 **改动内容**：
+
 - 每条描述一个独立变更点
 - 关注"做了什么"，不需要解释"怎么实现的"（代码本身说明实现）
 
 **注意事项**：
+
 - 有破坏性改动（API 不兼容、配置字段变更）时必须写明
 - 无特殊说明时删除本节，不保留空标题
 

@@ -9,13 +9,13 @@
 
 ## 5 个 dev 子仓
 
-| 仓 | 用途 |
-|---|---|
-| `om-dataarts` | DataArts 元数据采集 |
-| `om-dataarts-deployment` | om-dataarts 部署 |
-| `datastat-manage-website` | 前端展示 |
-| `om-deployment` | 部署 |
-| `APIMagic` | API 后端 |
+| 仓                        | 用途                |
+| ------------------------- | ------------------- |
+| `om-dataarts`             | DataArts 元数据采集 |
+| `om-dataarts-deployment`  | om-dataarts 部署    |
+| `datastat-manage-website` | 前端展示            |
+| `om-deployment`           | 部署                |
+| `APIMagic`                | API 后端            |
 
 ## 触发词
 
@@ -26,16 +26,16 @@
 
 ## 接入档位实际值
 
-| 占位符 | 实际值 |
-|---|---|
-| `<<PROJECT_NAME>>` | `om-datacenter` |
-| `<<PROJECT_DISPLAY_NAME>>` | 数据中台 |
-| `<<TRIGGER_PREFIX>>` | `数据中台` / `小数`（双触发） |
-| `<<DEV_REPOS>>` | `om-dataarts, om-dataarts-deployment, datastat-manage-website, om-deployment, APIMagic` |
-| `<<DEPLOY_MODE>>` | 各子仓不同（见 [`.preview/service.yaml`](../../pipeline/project-layer/preview-service-yaml-spec.md)） |
-| `<<BASE_DOMAIN>>` | `ai.test.osinfra.cn` |
-| `<<NAMESPACE>>` | `ai-test` |
-| `<<MAINTAINER_WHITELIST>>` | （白名单见项目仓 issue-3-merge-and-deploy.yml）|
+| 占位符                     | 实际值                                                                                                |
+| -------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `<<PROJECT_NAME>>`         | `om-datacenter`                                                                                       |
+| `<<PROJECT_DISPLAY_NAME>>` | 数据中台                                                                                              |
+| `<<TRIGGER_PREFIX>>`       | `数据中台` / `小数`（双触发）                                                                         |
+| `<<DEV_REPOS>>`            | `om-dataarts, om-dataarts-deployment, datastat-manage-website, om-deployment, APIMagic`               |
+| `<<DEPLOY_MODE>>`          | 各子仓不同（见 [`.preview/service.yaml`](../../pipeline/project-layer/preview-service-yaml-spec.md)） |
+| `<<BASE_DOMAIN>>`          | `ai.test.osinfra.cn`                                                                                  |
+| `<<NAMESPACE>>`            | `ai-test`                                                                                             |
+| `<<MAINTAINER_WHITELIST>>` | （白名单见项目仓 issue-3-merge-and-deploy.yml）                                                       |
 
 ## 关联
 

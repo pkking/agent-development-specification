@@ -4,11 +4,11 @@
 
 ## 1. 3 个骨架
 
-| 骨架 | 触发 | 项目 caller 文件名 |
-|---|---|---|
-| `issue-1-analyze-requirement.yml` | issue_comment `[<服务名>需求分析]` | `caller-workflow.yml` 中 dispatch 此 job |
-| `issue-2-implement-and-preview.yml` | issue_comment `[<服务名>需求实现]` | 同上 |
-| `issue-3-merge-and-deploy.yml` | issue_comment `[<服务名>需求上线]`（白名单） | 同上 |
+| 骨架                                | 触发                                         | 项目 caller 文件名                       |
+| ----------------------------------- | -------------------------------------------- | ---------------------------------------- |
+| `issue-1-analyze-requirement.yml`   | issue_comment `[<服务名>需求分析]`           | `caller-workflow.yml` 中 dispatch 此 job |
+| `issue-2-implement-and-preview.yml` | issue_comment `[<服务名>需求实现]`           | 同上                                     |
+| `issue-3-merge-and-deploy.yml`      | issue_comment `[<服务名>需求上线]`（白名单） | 同上                                     |
 
 ## 2. 骨架职责
 

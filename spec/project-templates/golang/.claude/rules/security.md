@@ -1,11 +1,14 @@
 # Go 安全开发规范
 
 ---
+
 paths:
-  - "**/*.go"
-  - "**/*.yaml"
-  - "**/*.yml"
-  - "**/Dockerfile"
+
+- "\*_/_.go"
+- "\*_/_.yaml"
+- "\*_/_.yml"
+- "\*\*/Dockerfile"
+
 ---
 
 > 本文件覆盖现有规范**未涉及**的安全要点，避免重复。
@@ -99,16 +102,17 @@ func safeOpen(baseDir, userInput string) (*os.File, error) {
 ### unsafe 包
 
 **业务代码中禁止使用 `unsafe` 包**。若性能优化确有必要，须满足：
+
 1. 有 benchmark 数据证明瓶颈
 2. 经 Tech Lead 审批
 3. 注释说明用途和风险
 
 ### math/rand vs crypto/rand
 
-| 场景 | 包 |
-|------|-----|
+| 场景                            | 包            |
+| ------------------------------- | ------------- |
 | Token、Session ID、验证码、密钥 | `crypto/rand` |
-| 测试数据、随机排序、非安全场景 | `math/rand` |
+| 测试数据、随机排序、非安全场景  | `math/rand`   |
 
 ```go
 // ❌ 危险：math/rand 可预测
@@ -130,13 +134,13 @@ func generateToken() (string, error) {
 
 ### 禁止使用的算法
 
-| 禁止 | 原因 | 替代 |
-|------|------|------|
-| MD5 | 碰撞攻击已实用化 | SHA-256 / SHA-3 |
-| SHA-1 | 碰撞攻击已实用化 | SHA-256 / SHA-3 |
-| DES / 3DES | 密钥长度不足 | AES-256-GCM |
-| ECB 模式 | 不加密模式，相同明文产生相同密文 | GCM / CBC+HMAC |
-| RSA < 2048 位 | 密钥长度不足 | RSA-2048 / ECDSA P-256 |
+| 禁止          | 原因                             | 替代                   |
+| ------------- | -------------------------------- | ---------------------- |
+| MD5           | 碰撞攻击已实用化                 | SHA-256 / SHA-3        |
+| SHA-1         | 碰撞攻击已实用化                 | SHA-256 / SHA-3        |
+| DES / 3DES    | 密钥长度不足                     | AES-256-GCM            |
+| ECB 模式      | 不加密模式，相同明文产生相同密文 | GCM / CBC+HMAC         |
+| RSA < 2048 位 | 密钥长度不足                     | RSA-2048 / ECDSA P-256 |
 
 ### 密码存储
 
@@ -290,15 +294,15 @@ go test -race -coverprofile=coverage.out ./...
 
 ## 禁止行为汇总
 
-| 禁止 | 说明 |
-|------|------|
-| `exec.Command("sh", "-c", userInput)` | 命令注入 |
-| `filepath.Join(base, userInput)` 不校验边界 | 路径穿越 |
-| `import "unsafe"` 在业务代码中 | 内存安全风险 |
-| `math/rand` 用于安全敏感场景 | 可预测 |
-| MD5/SHA-1/DES 用于密码或加密 | 算法已破解 |
-| 密码明文或可逆加密存储 | 数据泄露风险 |
-| 用户提供 URL 不校验直接请求 | SSRF |
-| `orderby` 参数不做白名单校验 | SQL 注入 |
-| 测试不带 `-race` 标志 | 竞态条件漏检 |
-| 屏蔽 gosec 报告的高危规则（`#nosec G201`） | 绕过安全检查 |
+| 禁止                                        | 说明         |
+| ------------------------------------------- | ------------ |
+| `exec.Command("sh", "-c", userInput)`       | 命令注入     |
+| `filepath.Join(base, userInput)` 不校验边界 | 路径穿越     |
+| `import "unsafe"` 在业务代码中              | 内存安全风险 |
+| `math/rand` 用于安全敏感场景                | 可预测       |
+| MD5/SHA-1/DES 用于密码或加密                | 算法已破解   |
+| 密码明文或可逆加密存储                      | 数据泄露风险 |
+| 用户提供 URL 不校验直接请求                 | SSRF         |
+| `orderby` 参数不做白名单校验                | SQL 注入     |
+| 测试不带 `-race` 标志                       | 竞态条件漏检 |
+| 屏蔽 gosec 报告的高危规则（`#nosec G201`）  | 绕过安全检查 |

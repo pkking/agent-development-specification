@@ -105,33 +105,38 @@ git push origin v1.2.0
 ## [Unreleased]
 
 ### Added
+
 - 新增用户邮箱验证功能 (#123)
 
 ### Changed
+
 - 优化订单查询接口响应速度 (#456)
 
 ### Fixed
+
 - 修复用户注册时邮箱大小写不一致的问题 (#789)
 
 ## [1.2.0] - 2024-03-15
 
 ### Added
+
 - ...
 
 ### Breaking Changes
+
 - 移除 /v1/users/search 接口，请使用 /v1/users?q= 代替
 ```
 
 ### 分类标签
 
-| 标签 | 含义 |
-| --- | --- |
-| Added | 新增功能 |
-| Changed | 现有功能的变更 |
-| Deprecated | 即将移除的功能 |
-| Removed | 已移除的功能 |
-| Fixed | Bug 修复 |
-| Security | 安全漏洞修复 |
+| 标签             | 含义                       |
+| ---------------- | -------------------------- |
+| Added            | 新增功能                   |
+| Changed          | 现有功能的变更             |
+| Deprecated       | 即将移除的功能             |
+| Removed          | 已移除的功能               |
+| Fixed            | Bug 修复                   |
+| Security         | 安全漏洞修复               |
 | Breaking Changes | 不兼容变更（必须醒目标注） |
 
 ### 编写规则

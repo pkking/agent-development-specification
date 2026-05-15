@@ -5,13 +5,13 @@
 
 ## 1. 总览
 
-| Agent | 职责 | 团队级 baseline prompt | 项目级 prompt（om-datacenter 实例） | 输出 |
-|---|---|---|---|---|
-| **requirements-doc**（Workflow A） | 把 issue 转需求分析说明书 | [`../../teams/prompts/requirements-doc.md`](../../teams/prompts/requirements-doc.md) | [`../../projects/om-datacenter/.github/agents/requirements-doc.md`](../../projects/om-datacenter/.github/agents/requirements-doc.md) | backlog 仓 PR + issue 回评 |
-| **design**（Workflow B 第 1 棒） | 出技术设计 + 验收标准 + 路由 | [`../../teams/prompts/design.md`](../../teams/prompts/design.md) | [`../../projects/om-datacenter/.github/agents/design.md`](../../projects/om-datacenter/.github/agents/design.md) | `route.json` + `design.md` |
-| **dev**（第 2 棒） | 实现代码 + UT + 开 PR | [`../../teams/prompts/dev.md`](../../teams/prompts/dev.md) | [`../../projects/om-datacenter/.github/agents/dev.md`](../../projects/om-datacenter/.github/agents/dev.md) | 各 dev 仓 PR + `result.json` |
-| **review**（第 3 棒） | 跑门禁 + 对抗式 review diff | [`../../teams/prompts/review.md`](../../teams/prompts/review.md) | [`../../projects/om-datacenter/.github/agents/review.md`](../../projects/om-datacenter/.github/agents/review.md) | `review_report.md` + 打回清单 |
-| **tester**（第 4 棒） | 4 类测试 + 报告 | [`../../teams/prompts/tester.md`](../../teams/prompts/tester.md) | [`../../projects/om-datacenter/.github/agents/tester.md`](../../projects/om-datacenter/.github/agents/tester.md) | `test_report.md` + 打回清单 + 复盘 |
+| Agent                              | 职责                         | 团队级 baseline prompt                                                               | 项目级 prompt（om-datacenter 实例）                                                                                                  | 输出                               |
+| ---------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------- |
+| **requirements-doc**（Workflow A） | 把 issue 转需求分析说明书    | [`../../teams/prompts/requirements-doc.md`](../../teams/prompts/requirements-doc.md) | [`../../projects/om-datacenter/.github/agents/requirements-doc.md`](../../projects/om-datacenter/.github/agents/requirements-doc.md) | backlog 仓 PR + issue 回评         |
+| **design**（Workflow B 第 1 棒）   | 出技术设计 + 验收标准 + 路由 | [`../../teams/prompts/design.md`](../../teams/prompts/design.md)                     | [`../../projects/om-datacenter/.github/agents/design.md`](../../projects/om-datacenter/.github/agents/design.md)                     | `route.json` + `design.md`         |
+| **dev**（第 2 棒）                 | 实现代码 + UT + 开 PR        | [`../../teams/prompts/dev.md`](../../teams/prompts/dev.md)                           | [`../../projects/om-datacenter/.github/agents/dev.md`](../../projects/om-datacenter/.github/agents/dev.md)                           | 各 dev 仓 PR + `result.json`       |
+| **review**（第 3 棒）              | 跑门禁 + 对抗式 review diff  | [`../../teams/prompts/review.md`](../../teams/prompts/review.md)                     | [`../../projects/om-datacenter/.github/agents/review.md`](../../projects/om-datacenter/.github/agents/review.md)                     | `review_report.md` + 打回清单      |
+| **tester**（第 4 棒）              | 4 类测试 + 报告              | [`../../teams/prompts/tester.md`](../../teams/prompts/tester.md)                     | [`../../projects/om-datacenter/.github/agents/tester.md`](../../projects/om-datacenter/.github/agents/tester.md)                     | `test_report.md` + 打回清单 + 复盘 |
 
 PR 评论格式 / release notes 等**非 agent 角色**的公共 prompt：[`../../teams/prompts/pr-comment.md`](../../teams/prompts/pr-comment.md) / [`../../teams/prompts/release-notes.md`](../../teams/prompts/release-notes.md)。
 

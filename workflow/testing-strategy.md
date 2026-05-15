@@ -20,13 +20,13 @@ k8s-deployer 部署预览
 
 ## 2. 失败级联
 
-| 失败层 | 后果 |
-|---|---|
-| smoke | 直接红，进 dev agent 修复轮 |
-| UT | 红 + 覆盖率不达标进修复轮 |
-| contract | 红，且 review agent 优先评审 |
+| 失败层      | 后果                                |
+| ----------- | ----------------------------------- |
+| smoke       | 直接红，进 dev agent 修复轮         |
+| UT          | 红 + 覆盖率不达标进修复轮           |
+| contract    | 红，且 review agent 优先评审        |
 | integration | 红，但预览 URL 仍可访问（人工调试） |
-| e2e | 红，标 `needs-human` |
+| e2e         | 红，标 `needs-human`                |
 
 ## 3. 覆盖率
 

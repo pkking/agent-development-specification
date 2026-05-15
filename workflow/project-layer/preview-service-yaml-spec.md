@@ -5,13 +5,13 @@
 ## 1. 必含字段
 
 ```yaml
-project: <project-name>        # 必填
-service: <service-name>        # 必填
-deploy_mode: dev-pod           # dev-pod | data-pod | shared | none
+project: <project-name> # 必填
+service: <service-name> # 必填
+deploy_mode: dev-pod # dev-pod | data-pod | shared | none
 image:
   registry: <registry-url>
   repo: <repo-path>
-  tag: ${PR_NUMBER}            # 占位符，由 deployer 替换
+  tag: ${PR_NUMBER} # 占位符，由 deployer 替换
 port: 8080
 health_check:
   path: /healthz
@@ -20,19 +20,19 @@ health_check:
 ingress:
   host: pr-${PR_NUMBER}.${BASE_DOMAIN}
   path: /
-namespace: ${NAMESPACE}        # 由 deployer 替换
+namespace: ${NAMESPACE} # 由 deployer 替换
 ```
 
 ## 2. 可选字段
 
-| 字段 | 说明 |
-|---|---|
-| `env` | 注入到容器的环境变量 |
-| `env_from_secret` | 引用 K8s Secret |
-| `volumes` | 挂载（仅 data-pod 模式） |
-| `resources` | CPU / mem requests / limits |
-| `test_targets` | 覆盖默认测试命令 |
-| `extra_gates` | 加额外 gates 检查 |
+| 字段              | 说明                        |
+| ----------------- | --------------------------- |
+| `env`             | 注入到容器的环境变量        |
+| `env_from_secret` | 引用 K8s Secret             |
+| `volumes`         | 挂载（仅 data-pod 模式）    |
+| `resources`       | CPU / mem requests / limits |
+| `test_targets`    | 覆盖默认测试命令            |
+| `extra_gates`     | 加额外 gates 检查           |
 
 ## 3. 占位符
 
