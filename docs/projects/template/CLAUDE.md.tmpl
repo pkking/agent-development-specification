@@ -1,55 +1,256 @@
-# 项目级 CLAUDE.md — <<PROJECT_DISPLAY_NAME>>
+# <<PROJECT_DISPLAY_NAME>> — Claude Code 项目入口
 
-> 本文件复制到项目仓 `<<PROJECT_NAME>>/CLAUDE.md`，按下方占位符逐字替换。
-> 与团队层 [`../../teams/CLAUDE.md`](../../teams/CLAUDE.md) 配套，本文件覆盖或扩展团队规范。
-> 优先级：个人层 `~/.claude/CLAUDE.md` > 项目层（本文件） > 团队层。
+> 项目级 CLAUDE.md。**AI agent / 新加入的人，先读这一份就够动手了**。每段都是要么直接给答案、要么给到具体下一份要读的文档。
+> 配套：[团队级 CLAUDE.md](../../teams/CLAUDE.md)。优先级：个人层 `~/.claude/CLAUDE.md` > **本文件（项目层）** > 团队层。
+>
+> **怎么填这个模板**：所有 `<<...>>` 占位符按 [`ONBOARDING-CHECKLIST.md`](ONBOARDING-CHECKLIST.md)（同目录）逐字替换；每段「> 示例 / 说明」开头的引用块是给你看的注释，填完后**整段删掉**。
+> **注意**：本文件里写到的 `docs/api-spec.md` / `docs/architecture.md` 等链接，是**接入后**你项目仓里实际文件的相对路径（template 仓里它们带 `.tmpl` 后缀；ONBOARDING 流程会去掉后缀）。
 
-## 1. 项目一句话
+---
 
-<<PROJECT_DISPLAY_NAME>>（`<<PROJECT_NAME>>`）— **一句话用途描述，必填**。
+## 0. 1 分钟读懂
 
-## 2. 项目档位
+> 示例：「数据中台是 openEuler 等开源社区的数据采集与展示平台。给社区运营人员看『我的社区健康度如何、谁是核心贡献者、雷达哪些项目值得关注』。**不解决** 代码托管、CI/CD 本身的事——那是 GitHub / Gitee 的活，我们只采集它的元数据。」
 
-- 接入档位：B 档（全 AI 自动开发）
-- 接入参考：[`../../pipeline/project-layer/onboarding-tier-B.md`](../../pipeline/project-layer/onboarding-tier-B.md)
+**一句话**：<<PROJECT_DISPLAY_NAME>>（`<<PROJECT_NAME>>`）——【填写：1 行核心定位】
 
-## 3. 触发词
+**给谁用**：【典型用户画像 + 1-2 个真实使用场景，2-3 行】
 
-- `[<<TRIGGER_PREFIX>>需求]` — 菜单
-- `[<<TRIGGER_PREFIX>>需求分析]` — 流程 1
-- `[<<TRIGGER_PREFIX>>需求实现]` — 流程 2
-- `[<<TRIGGER_PREFIX>>需求上线]` — 流程 3（白名单 `<<MAINTAINER_WHITELIST>>`）
+**核心价值**：
+- 解决什么：【1 行】
+- **不解决**什么（边界）：【1 行 — 这条比『解决什么』更重要，agent 容易越界】
 
-## 4. 子仓清单（如为 umbrella 项目）
+---
 
-<<DEV_REPOS>> — 逗号分隔，每个子仓在项目根目录用 git submodule 管理。
+## 1. 架构与技术栈
 
-## 5. 部署
+### 1.1 系统视图
 
-- 默认部署模式：`<<DEPLOY_MODE>>`（详见 [`../../pipeline/generic-layer/deployer.md`](../../pipeline/generic-layer/deployer.md)）
-- 预览域名：`pr-<n>.<<BASE_DOMAIN>>`
-- K8s namespace：`<<NAMESPACE>>`
+> 示例 — mermaid 画一张 5-8 个节点的图，包含：本项目内部模块 + 上游数据源 + 下游消费方 + 外部 SaaS。复杂项目 ≤ 2 张图（业务流 + 部署拓扑），不要画 N 张层次图。
 
-## 6. 项目铁规
+```mermaid
+flowchart LR
+  upstream[【上游：GitHub / Gitee / ...】] --> A[【模块 A 干啥】]
+  A --> DB[(【存哪儿】)]
+  DB --> B[【模块 B 干啥】]
+  B --> ui[【展示给谁】]
+```
 
-> 列项目专属的「必须」「禁止」事项。下方为示例，按项目实际改写：
+### 1.2 技术栈
 
-- 禁止把数据库 root 密码写进代码或文档；放 Vault sidecar 注入
-- 任何对外接口必须配 OAuth2；不允许裸 API
-- 大表 schema 变更必须经至少两位 maintainer 评审
-- 详尽安全规则继承自 [`../../teams/standards/security.md`](../../teams/standards/security.md)
+| 维度 | 选型 | 备注 |
+|---|---|---|
+| 语言 | 【Python 3.11 / Go 1.21 / TS 5.x】 | 版本下限见 go.mod / pyproject.toml |
+| 主框架 | 【FastAPI / Gin / Vue3 + Vite】 | — |
+| 持久层 | 【PostgreSQL 14 / Redis 7】 | 唯一写入方见 §4 铁规 |
+| 消息 | 【Kafka / RabbitMQ】 | 跨服务异步用它 |
+| 部署 | K8s + nginx Ingress | 集群在 `<<NAMESPACE>>` |
+| 监控 | 【Grafana / Prometheus】 | dashboard：内部地址 |
 
-## 7. 覆盖团队规范的部分
+### 1.3 与其它项目的关系
 
-> 在本项目层显式声明与团队规范的差异（任意可选）：
+- **上游**：【哪个项目 / 数据源给我们灌数据】
+- **下游**：【谁消费我们的数据 / API】
+- **同级依赖**：【共享基建：OneID、API 网关、对象存储等】
 
-- 编码风格覆盖：[`docs/coding-overrides.md`](docs/coding-overrides.md)
-- 测试策略调整：[`docs/test-strategy.md`](docs/test-strategy.md)
-- 部署细节：[`docs/deployment.md`](docs/deployment.md)
-- 凭据清单：[`docs/credentials-inventory.md`](docs/credentials-inventory.md)
+---
 
-## 8. 关联
+## 2. 仓结构 & 命名
 
-- 团队 CLAUDE.md：[`../../teams/CLAUDE.md`](../../teams/CLAUDE.md)
-- 通用流水线全景：[`../../pipeline/architecture.md`](../../pipeline/architecture.md)
-- 模板自检：[`../ONBOARDING-CHECKLIST.md`](../ONBOARDING-CHECKLIST.md)
+### 2.1 仓本身
+
+```
+<<PROJECT_NAME>>/
+├── src/             ← 业务代码
+├── tests/           ← 测试
+├── docs/            ← 项目文档（见 §11 索引）
+├── deploy/          ← K8s yaml / Dockerfile
+├── skills/          ← 项目自定义 skill（AI 操作 playbook）
+└── .github/         ← agent prompt + workflow
+```
+
+### 2.2 子仓（仅 umbrella 项目）
+
+> 示例 — om-datacenter 是 umbrella，下挂 5 个 dev 子仓 + 1 个数据采集仓
+
+| 子仓 | 用途 | 基础分支 | 自己的 CLAUDE.md |
+|---|---|---|---|
+| `<repo-1>` | 【后端 API / 前端 / 采集 ...】 | `main` / `beta` | `<repo-1>/CLAUDE.md` |
+| `<repo-2>` | ... | ... | ... |
+
+完整列表（占位符）：`<<DEV_REPOS>>` — 逗号分隔。
+
+### 2.3 命名约定
+
+- 文件：`kebab-case` / `snake_case`（按语言）
+- 分支：`feature/<issue-id>-<slug>` / `fix/<issue-id>-<slug>`
+- 流水线分支（AI 自动开发用）：`<source-repo 短名>-issue-<N>`
+- commit：`<type>: <subject>`，类型见团队 [`git-workflow.md`](../../teams/standards/git-workflow.md)
+
+---
+
+## 3. 5 分钟跑通本地
+
+> 示例 — 真正可复制可执行的 shell。包括起依赖、拉数据、跑测试、起服务、看效果。把 "先去看 README 再回来" 这种废话剔掉。
+
+```bash
+# 0. 前置：装 <node 20 / python 3.11 / docker>
+# 1. 起依赖
+docker compose up -d postgres redis
+
+# 2. 装依赖
+pnpm install         # 或 pip install -r requirements.txt / go mod download
+
+# 3. 跑测试
+pnpm test            # 期望：全绿，覆盖率 ≥ 60%
+
+# 4. 起服务
+pnpm dev             # localhost:3000
+
+# 5. 验证
+curl http://localhost:3000/healthz   # 期望 {"status":"ok"}
+```
+
+**常见跑不起来**：
+- 【报错 X → 装 Y】
+- 【报错 Z → 改 `.env` 加 ABC】
+
+---
+
+## 4. 项目铁规（违反直接打回，不商量）
+
+> 示例 — 5-8 条最重要的、容易被违反的强约束。**比 1 篇 1000 行编码规范有用 10 倍**——agent 真会读这一段然后照做。
+
+- 🔴 **必须**：APIMagic 是写 PG 的**唯一**入口；其它任何仓 / 服务一律只读
+- 🔴 **必须**：所有对外 HTTP 接口走 OAuth2 OneID 鉴权（参考 [`api-spec.md`](docs/api-spec.md)）；裸 API = 直接打回
+- 🔴 **必须**：日志带 `trace_id`；不带 = 拒合
+- 🔴 **禁止**：`SELECT *` / 字符串拼 SQL / 把密码 / token / kubeconfig 写进代码或文档（凭据走 [`credentials-inventory.md`](docs/credentials-inventory.md) 三档存储）
+- 🔴 **禁止**：跨子仓直接读对方数据库；要么走 API，要么走消息总线
+- 🔴 **禁止**：在生产环境 `kubectl exec` 改运行时配置；走 GitOps
+- 🟡 **强烈建议**：新功能必须配 i18n key（中英双语），硬编码中文文案会被 review 卡
+
+详尽安全 / 编码 / 测试规范继承自团队层：
+- [`../../teams/standards/security.md`](../../teams/standards/security.md)
+- [`../../teams/standards/coding.md`](../../teams/standards/coding.md)
+- [`../../teams/standards/testing.md`](../../teams/standards/testing.md)
+
+---
+
+## 5. 常见任务怎么做（playbook）
+
+> 示例 — 表格化「我要做 X，第一步去哪、关键决策点是什么」。**只列高频任务**，长尾留给 `skills/`。
+
+| 我要做的事 | 第一步看哪 | 关键决策点 | 详细 skill |
+|---|---|---|---|
+| 加一个对外 API | [`docs/api-spec.md`](docs/api-spec.md) | 鉴权 / 限流 / 错误码 | [`skills/add-api/`](skills/) |
+| 接入一个新社区 | [`skills/add-community/`](skills/) | 数据源类型 / 采集频次 / 表名 | — |
+| 改 PostgreSQL schema | [`docs/db-schema.md`](docs/) | 是否需要 zero-downtime migration | [`skills/db-migration/`](skills/) |
+| 新增前端页面 | [`docs/frontend-routes.md`](docs/) | 哪个 community 可见 / 哪个 menu 权限 | — |
+| 处理生产事故 | [事故复盘模板](../../teams/templates/Learn%20From%20the%20Incident/) | 5 分钟内是否要回滚 | — |
+
+---
+
+## 6. 踩坑录（前人的血）
+
+> 示例 — 这一段比其它都重要。**写真实踩过的坑**，每条带「错的做法 / 对的做法 / 为什么」。
+> 长尾踩坑放到 `docs/coding-overrides.md` 等具体文档里，这里只列**项目级最常踩**的 3-5 条。
+
+### 6.1 APIMagic `.ms` 文件改 `options` 加了 `wrap_request_parameter`
+
+❌ 错：在 `.ms` 的 `options` 里塞 `wrap_request_parameter` → 所有请求参数被裹进一个变量 → 脚本里裸用 `community` 变成 `null` → `.toLowerCase()` NPE → 接口直接 500「系统内部出现错误」
+
+✅ 对：要么不要这个 option，要么只在 SQL `#{参数名}` 里用、脚本代码里别裸引参数
+
+🤔 为啥：详见 [`docs/coding-overrides.md` §APIMagic](docs/coding-overrides.md)
+
+### 6.2 【填项目第二常见的坑】
+
+【...】
+
+### 6.3 【填项目第三常见的坑】
+
+【...】
+
+---
+
+## 7. AI 自动开发流水线接入
+
+> 这一段是给 AI agent / 流水线代码看的，不是给人看的。**保持简洁**，详尽机制看流水线全景。
+
+| 项 | 值 |
+|---|---|
+| 接入档位 | B 档（全 AI 自动开发） |
+| 触发词 - 菜单 | `[<<TRIGGER_PREFIX>>需求]` |
+| 触发词 - 流程 1 | `[<<TRIGGER_PREFIX>>需求分析]` |
+| 触发词 - 流程 2 | `[<<TRIGGER_PREFIX>>需求实现]` |
+| 触发词 - 流程 3 | `[<<TRIGGER_PREFIX>>需求上线]`（白名单：`<<MAINTAINER_WHITELIST>>`） |
+| 部署模式 | `<<DEPLOY_MODE>>`（dev-pod / data-pod / shared / none） |
+| 预览域名 | `pr-<n>.<<BASE_DOMAIN>>` |
+| K8s namespace | `<<NAMESPACE>>` |
+| Agent prompt | `.github/agents/` 下 5 个 .md（requirements-doc / design / dev / review / tester），项目层覆盖在团队 baseline 之上；实例参考 [om-datacenter/.github/agents/](../om-datacenter/.github/agents/) |
+| 流水线全景 | [`../../pipeline/architecture.md`](../../pipeline/architecture.md) |
+
+---
+
+## 8. 项目术语 / 词汇表
+
+> 示例 — 列项目专有名词、内部代号、领域 jargon。**让 agent 不需要靠猜**。
+
+| 术语 | 含义 | 例 |
+|---|---|---|
+| 【D0/D1/D2】 | 【贡献者活跃度等级】 | D0 = 当月有 PR/Issue/Comment |
+| 【insight】 | 【内部代号：技术雷达模块】 | 路由 `/insight-all` |
+| 【datastatadmin】 | 【datastat 平台管理员权限】 | 在 OneID 配，对应 `datastatadmin_View` |
+
+---
+
+## 9. 谁负责什么（owners）
+
+> 示例 — 每个模块 / 关键能力的负责人或群。**不写真实姓名也行**，写一个 GitHub handle 或群名 / 邮件别名。这一段过期最快，maintainer 自检每月看一下。
+
+| 范围 | 主负责 | 备份 / 群 |
+|---|---|---|
+| 整体架构 + 流水线 | `@<<PROJECT_OWNER>>` | `<team-channel>` |
+| 后端 API | `@<owner>` | — |
+| 前端 | `@<owner>` | — |
+| 数据采集 | `@<owner>` | — |
+| 部署 / SRE | `@<owner>` | — |
+| 生产事故 oncall | 轮值表 | 链接到 oncall 表 |
+
+---
+
+## 10. 这一份太长了 → 我只想 30 秒看完
+
+> 给真急的人 / agent 第一次接入项目的 30 秒摘要。
+
+- **这是什么**：见 §0「一句话」
+- **铁规**：见 §4 红色项（不能违反，违反直接打回）
+- **我要动手做某件事**：见 §5 playbook 表，找到任务类型 → 第一步看哪个文档
+- **触发流水线**：见 §7 触发词表
+- **更详尽**：见 §11 索引
+
+---
+
+## 11. 往深处读（索引）
+
+| 想了解什么 | 文档 |
+|---|---|
+| 完整架构（含组件交互 / 时序图） | [`docs/architecture.md`](docs/architecture.md) |
+| 对外 API 规约 | [`docs/api-spec.md`](docs/api-spec.md) |
+| 编码风格（项目层差异） | [`docs/coding-overrides.md`](docs/coding-overrides.md) |
+| 测试策略（项目专有用例） | [`docs/test-strategy.md`](docs/test-strategy.md) |
+| 部署 / 灰度 / 回滚 | [`docs/deployment.md`](docs/deployment.md) |
+| 凭据清单（**不含真实值**，只列名 / 档位 / 用途） | [`docs/credentials-inventory.md`](docs/credentials-inventory.md) |
+| 项目自定义 skill | [`skills/`](skills/) |
+| 团队级规范（编码 / 测试 / API / 安全 / git / 发布 / 架构） | [`../../teams/standards/`](../../teams/standards/) |
+| 团队模板（需求 / 架构 / 测试 / 发布 / 复盘） | [`../../teams/templates/`](../../teams/templates/) |
+| AI 流水线全景 | [`../../pipeline/architecture.md`](../../pipeline/architecture.md) |
+| 团队 CLAUDE.md（流水线 + 跨项目规范） | [`../../teams/CLAUDE.md`](../../teams/CLAUDE.md) |
+
+---
+
+## 12. 维护这份文档
+
+- **更新触发点**：架构变动 / 加新子仓 / 改铁规 / 加常见踩坑 → **当 commit 就改这份**，不要拖到下个迭代
+- **owner**：`@<<PROJECT_OWNER>>` + 你（如果你是 agent，加完代码后顺手 propose 更新）
+- **质量自检**：新人 / agent 第一次接入项目时如果有问「这是什么 / 怎么 X」类问题，回答完后**回头补这份**让下一个人不必再问

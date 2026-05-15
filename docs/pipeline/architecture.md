@@ -206,21 +206,26 @@ ai-dev-runner 跑在 K8s pod 里、以非 root 用户 `runner` 运行（见 [`..
 
 ### 4.2 ra-doc 模式步骤
 
-1. **Workflow checkout 项目仓**（om-datacenter 自身，作为工具仓），不拉 submodule
+1. **Workflow checkout 项目仓**（umbrella 仓，作为 TOOLS_DIR），不拉 submodule；落到 `$GITHUB_WORKSPACE`，含**项目 CLAUDE.md**（[模板 `CLAUDE.md.tmpl`](../projects/template/CLAUDE.md.tmpl) / 实例 [om-datacenter/CLAUDE.md](../projects/om-datacenter/CLAUDE.md)）+ `.github/agents/` + `skills/` + `docs/`
 2. **算路径**：`DOCS_BRANCH=issue-<N>-design-docs`，目标文件路径 `opensourceways/<source-repo-short>/issue_docs/<N>/Requirement Analysis/#<N> Requirement Analysis Specification.md`
 3. **Setup opencode env**（装 LLM 调用器，密钥来自 [`OPENCODE_API_KEY`](generic-layer/credentials-storage.md)）
 4. **Clone backlog 仓**到 `$GITHUB_WORKSPACE/backlog`（实际路径 `/home/runner/actions-runner/_work/<repo>/<repo>/backlog`，见 §3.5），新建（或复用）`DOCS_BRANCH`
 5. **Fetch issue 全文**（标题 + 正文 + 全部评论）到 `/tmp/opencode/issue.txt`，由 composite action `.github/actions/fetch-issue` 完成
-6. **跑 AI agent 写文档**（核心一步）：
-   - 加载 prompt：[`../projects/om-datacenter/.github/agents/requirements-doc.md`](../projects/om-datacenter/.github/agents/requirements-doc.md)
-   - 工作目录 = backlog 仓 checkout（agent 能直接读到 `templates/` / `AGENTS.md` / `context/`）
-   - agent 按 prompt 强制要求必读：
-     - 团队需求分析模板 [`../teams/templates/Requirement Analysis/`](../teams/templates/Requirement%20Analysis/)
-     - 同类经验 [`../teams/context/experience/需求分析说明书编写经验.md`](../teams/context/experience/%E9%9C%80%E6%B1%82%E5%88%86%E6%9E%90%E8%AF%B4%E6%98%8E%E4%B9%A6%E7%BC%96%E5%86%99%E7%BB%8F%E9%AA%8C.md)
-     - AI 辅助工作模式 [`../teams/context/experience/AI辅助需求分析工作模式.md`](../teams/context/experience/AI%E8%BE%85%E5%8A%A9%E9%9C%80%E6%B1%82%E5%88%86%E6%9E%90%E5%B7%A5%E4%BD%9C%E6%A8%A1%E5%BC%8F.md)
+6. **准备项目 context — agent 写需求分析得先看懂项目是什么**（关键！否则 agent 凭空臆想需求）：
+   - **项目 CLAUDE.md**：`$GITHUB_WORKSPACE/CLAUDE.md`（umbrella 仓根）— **项目 1 分钟读懂入口**：模板见 [`../projects/template/CLAUDE.md.tmpl`](../projects/template/CLAUDE.md.tmpl)，实例见 [`../projects/om-datacenter/CLAUDE.md`](../projects/om-datacenter/CLAUDE.md)。覆盖：项目电梯陈词 / 架构图 / 技术栈 / 仓结构 / 项目铁规 / 踩坑录 / 流水线接入 / 词汇表 / owner / 索引
+   - **项目架构详尽**：`$GITHUB_WORKSPACE/docs/architecture.md`（如有）
+   - **项目 skills**：`$GITHUB_WORKSPACE/skills/`（项目专属操作 playbook）
+   - **各 dev 子仓的 CLAUDE.md**（如 umbrella 项目）：通过 submodule 路径访问；不需要全部 clone，根据 issue 涉及的子仓有选择性读
+7. **跑 AI agent 写文档**（核心一步）：
+   - 加载 prompt：[`../projects/om-datacenter/.github/agents/requirements-doc.md`](../projects/om-datacenter/.github/agents/requirements-doc.md)（其中已 require「先读 `$GITHUB_WORKSPACE/CLAUDE.md` 弄清楚项目是什么再动笔」）
+   - 工作目录 = backlog 仓 checkout（agent 能直接读到 backlog 的 `templates/` / `AGENTS.md` / `context/`），同时通过绝对路径 `$GITHUB_WORKSPACE/CLAUDE.md` 读项目 context
+   - agent 按 prompt 强制必读 3 类文件：
+     - **项目 context**（step 6 列的那几个）→ 知道这是什么项目、要符合哪些项目铁规
+     - **团队需求分析模板** [`../teams/templates/Requirement Analysis/`](../teams/templates/Requirement%20Analysis/) → 知道文档结构
+     - **写作经验**：[`../teams/context/experience/需求分析说明书编写经验.md`](../teams/context/experience/%E9%9C%80%E6%B1%82%E5%88%86%E6%9E%90%E8%AF%B4%E6%98%8E%E4%B9%A6%E7%BC%96%E5%86%99%E7%BB%8F%E9%AA%8C.md) + [AI 辅助工作模式](../teams/context/experience/AI%E8%BE%85%E5%8A%A9%E9%9C%80%E6%B1%82%E5%88%86%E6%9E%90%E5%B7%A5%E4%BD%9C%E6%A8%A1%E5%BC%8F.md) → 避免之前踩过的坑
    - agent 按模板结构填写：场景 / 验收标准（可量化）/ 核心逻辑 / 任务清单（2-4 个）/ 需求相关性分析（need_security / need_design / need_itest / need_ux / need_light）/ 价值评估（Accept / Reject / Pending）
-7. **Commit + push docs 分支 → 开 PR 到 backlog 仓**：分支 `issue-<N>-design-docs`，base `main`
-8. **回评原 issue**：贴 PR 链接 + 下一步说明（合入 PR 后评 `[<服务名>需求实现]`）
+8. **Commit + push docs 分支 → 开 PR 到 backlog 仓**：分支 `issue-<N>-design-docs`，base `main`
+9. **回评原 issue**：贴 PR 链接 + 下一步说明（合入 PR 后评 `[<服务名>需求实现]`）
 
 **完成判据**：issue 收到 PR 链接评论；backlog 仓收到需求文档 PR。
 
