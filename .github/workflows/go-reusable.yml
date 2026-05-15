@@ -18,6 +18,11 @@ on:
         required: false
         type: string
         default: './...'
+      fetch-depth:
+        description: 'Fetch depth for checkout (0 for full history needed by incremental coverage)'
+        required: false
+        type: string
+        default: '1'
     secrets:
       gh-token:
         description: 'GitHub token for accessing private repositories'
@@ -30,6 +35,10 @@ env:
   GOPRIVATE: github.com/opensourceways/*
   GONOSUMDB: github.com/opensourceways/*
   GOPROXY: https://goproxy.cn,direct
+  # Coverage thresholds (fixed for all projects)
+  FULL_COVERAGE_THRESHOLD: 10.0
+  INC_COVERAGE_THRESHOLD: 80.0
+  TEST_PACKAGES: ${{ inputs.test-packages }}
 
 jobs:
   build:
@@ -39,6 +48,8 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        fetch-depth: ${{ inputs.fetch-depth }}
 
     - name: Configure git
       shell: bash
@@ -50,7 +61,7 @@ jobs:
         fi
 
     - name: Cache Go modules and build
-      uses: actions/cache@v4
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
       with:
         path: |
           ~/.cache/go-build
@@ -65,9 +76,9 @@ jobs:
         set -euo pipefail
         go build -v ./...
 
-    - name: Test Coverage
+    - name: Coverage Check
       shell: bash
       run: |
         set -euo pipefail
-        go test -v -coverprofile=coverage.out ${{ inputs.test-packages }}
-        go tool cover -func=coverage.out | tail -1
+        chmod +x scripts/go_coverage_check.sh
+        ./scripts/go_coverage_check.sh
