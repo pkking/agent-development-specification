@@ -1,70 +1,83 @@
 {
-  "_doc": "数据中台 v1.0.0 基线发版 manifest — 跑：python release.py --manifest examples/om-datacenter-v1.0.0.json",
+  "_doc": "数据中台 v1.0.0 基线发版 manifest — 5 仓（1 umbrella + 4 submodule，不含 om-dataarts-deployment）。跑：python release.py --manifest examples/om-datacenter-v1.0.0.json",
 
-  "tag": "v1.0.0",
+  "tag":  "v1.0.0",
   "date": "2026-05-15",
   "draft": false,
   "prerelease": false,
-
   "tagger": {
-    "name": "opensourceways-bot",
+    "name":  "opensourceways-bot",
     "email": "noreply@opensourceways.org"
   },
 
-  "tag_message_file": "baseline-tag-message.txt",
-  "body_template_file": "baseline-release-body.template.md",
-  "release_title_template": "{tag} — 数据中台基线版本",
+  "umbrella": {
+    "owner":  "opensourceways",
+    "name":   "om-datacenter",
+    "branch": "main",
+    "title_template":               "{tag} — 数据中台基线版本（umbrella）",
+    "body_template_file":           "umbrella-body.template.md",
+    "tag_message_template_file":    "umbrella-tag-message.txt",
+    "context": {
+      "project_display_name": "数据中台",
+      "role_label":           "数据中台 umbrella（AI 自动开发流水线主控）",
+      "capability": "- **AI 自动开发流水线**：Issue → 需求分析 → 多 agent 对抗实现（design / dev / review / tester） → 起预览 → 合入 → 上 beta 全链路\n- **多 agent 对抗机制**：design / dev / review / tester 4 个角色，feedback 回 dev 重跑，最多 `MAX_FIX_ROUNDS=3` 轮\n- **预览部署**：4 种 deploy mode（dev-pod / data-pod / shared / none），nginx Ingress 自动起 per-PR 独立预览 URL\n- **跨仓多子仓编排**：通过 git submodule + 服务注册表统一调度 APIMagic / datastat-manage-website / om-dataarts / om-deployment\n- **凭据三档存储**：GitHub Secret / K8s Secret / Vault sidecar，全链路可观测、可轮换\n- **K8s self-hosted runner**：ai-dev-runner + k8s-deployer 双 runner 部署，覆盖开发 + 部署边界",
+      "known_limits": "- 部分 SRE 私有 deploy yaml（如 ai-design-runner 的 K8s Deployment）尚未完全入仓，运行实例由 SRE 手工维护\n- API 鉴权 token 当前依赖 OneID 测试 IDP 与生产 IDP 数据同步，跨环境时需注意\n- 流水线 forward workflow 在评论 body 过长时偶现日志被 GitHub 清掉，diagnose 不便\n- `om-dataarts-deployment` 仓本次基线**不发版**（其能力由 om-dataarts + om-deployment 共同覆盖）",
+      "docs_links": "- 数据中台流水线全景：[`agent-development-specification/docs/pipeline/architecture.md`](https://github.com/opensourceways/agent-development-specification/blob/main/docs/pipeline/architecture.md)\n- 项目级 CLAUDE.md：[`agent-development-specification/docs/projects/om-datacenter/CLAUDE.md`](https://github.com/opensourceways/agent-development-specification/blob/main/docs/projects/om-datacenter/CLAUDE.md)\n- 团队规范：[`agent-development-specification/docs/teams/`](https://github.com/opensourceways/agent-development-specification/tree/main/docs/teams)\n- 发版工具：[`tools/tag/release.py`](https://github.com/opensourceways/agent-development-specification/blob/main/tools/tag/release.py)"
+    }
+  },
 
-  "repos": [
+  "submodules": [
     {
-      "owner": "opensourceways",
-      "name": "om-datacenter",
+      "owner":  "opensourceways",
+      "name":   "APIMagic",
       "branch": "main",
-      "role": "umbrella",
-      "role_label": "🌐 数据中台 umbrella（AI 自动开发流水线主控）",
-      "include_matrix": true,
-      "capability": "- **AI 自动开发流水线**：Issue → 需求分析 → 多 agent 对抗实现（design / dev / review / tester） → 起预览 → 合入 → 上 beta 全链路\n- **多 agent 对抗机制**：design / dev / review / tester 4 个角色，feedback 回 dev 重跑，最多 `MAX_FIX_ROUNDS=3` 轮\n- **预览部署**：4 种 deploy mode（dev-pod / data-pod / shared / none），nginx Ingress 自动起 per-PR 独立预览 URL\n- **跨仓多子仓编排**：通过 git submodule + 服务注册表统一调度 APIMagic / datastat / om-dataarts / om-deployment\n- **凭据三档存储**：GitHub Secret / K8s Secret / Vault sidecar，全链路可观测、可轮换\n- **K8s self-hosted runner**：ai-dev-runner + k8s-deployer 双 runner 部署，覆盖开发 + 部署边界",
-      "body_extra": "- 部分子仓的 deploy yaml（如 ai-design-runner 的 deployment.yaml）尚未完全入仓，运行实例由 SRE 手工维护\n- API 鉴权 token 当前依赖 OneID 测试 IDP 与生产 IDP 数据同步，跨环境时需注意\n- 流水线 forward workflow 在评论 body 过长时偶现日志被 GitHub 清掉，diagnose 不便\n- `om-dataarts-deployment` 仓本次基线**不发版**"
+      "title_template":            "{tag} — APIMagic（数据中台后端 API）",
+      "body_template_file":        "submodule-body.template.md",
+      "tag_message_template_file": "submodule-tag-message.txt",
+      "context": {
+        "role_label":   "APIMagic — 后端 API（PG 数据访问层）",
+        "capability":   "- **数据访问层**：基于 magic-api，统一 PG 写入入口（项目铁规：APIMagic 是唯一写 PG 的服务）\n- **per-PR 预览**：dev-pod 模式，每个 PR 起独立 APIMagic 实例 + 独立 PG 表（`magic_api_file_v2_pr<N>`）\n- **接口契约测试**：`test/specs/*.spec.json` 驱动的测试套件，覆盖正常 / 边界 / 非法参数 / 不存在 / 返回格式 / 响应时间 6 类断言\n- **多社区元数据**：覆盖 openEuler / MindSpore / openGauss / Kunpeng / openUBMC 等多个社区的指标计算接口",
+        "known_limits": "- 接口元数据存数据库 `magic_api_file_v2` 表，直接 `UPDATE` `file_content` 列会破坏 JSON 头部 — 改 .ms 接口请走管理面板 / PR 流程"
+      }
     },
     {
-      "owner": "opensourceways",
-      "name": "APIMagic",
-      "branch": "main",
-      "role": "backend",
-      "role_label": "⚙️ 后端 API（PG 数据访问层）",
-      "include_matrix": false,
-      "capability": "- **数据访问层**：基于 magic-api，统一 PG 写入入口（项目铁规：APIMagic 是唯一写 PG 的服务）\n- **per-PR 预览**：dev-pod 模式，每个 PR 起独立 APIMagic 实例 + 独立 PG 表（`magic_api_file_v2_pr<N>`）\n- **接口契约测试**：`test/specs/*.spec.json` 驱动的接口测试套件，覆盖正常 / 边界 / 非法参数 / 不存在 / 返回格式 / 响应时间 6 类断言\n- **多社区元数据**：覆盖 openEuler / MindSpore / openGauss / Kunpeng / openUBMC 等 N 个社区的指标计算接口",
-      "body_extra": "- 历史接口元数据从 GitHub 管理面板编辑写入数据库 `magic_api_file_v2` 表，直接 `UPDATE` 该表的 `file_content` 列会破坏 JSON 头部"
-    },
-    {
-      "owner": "opensourceways",
-      "name": "datastat-manage-website",
+      "owner":  "opensourceways",
+      "name":   "datastat-manage-website",
       "branch": "beta",
-      "role": "frontend",
-      "role_label": "🖼️ 前端展示",
-      "include_matrix": false,
-      "capability": "- **多社区数据展示**：贡献者排行 / 健康度评估 / 雷达图 / SIG 视图 / 趋势分析等\n- **OneID 鉴权集成**：通过 `/api-id/oneid/user/permissions` 拉权限驱动菜单可见性\n- **PPT 导出能力**：技术雷达页面支持按项目类型 / 等级筛选导出 PPT\n- **3 套部署环境**：production / beta / test 各自 nginx 配置 + LLM endpoint 路由（详见 `deploy/nginx/`）\n- **i18n 中英双语**：所有用户文案走 i18n key",
-      "body_extra": "- 预览部署用 vite dev server 模式，mock plugin 会接管所有 `/api-id/*` 请求 → 预览显示的是 mock 的硬编码 zjw 权限，不是真实 IDP"
+      "title_template":            "{tag} — datastat-manage-website（数据中台前端）",
+      "body_template_file":        "submodule-body.template.md",
+      "tag_message_template_file": "submodule-tag-message.txt",
+      "context": {
+        "role_label":   "datastat-manage-website — 前端展示",
+        "capability":   "- **多社区数据展示**：贡献者排行 / 健康度评估 / 雷达图 / SIG 视图 / 趋势分析等\n- **OneID 鉴权集成**：通过 `/api-id/oneid/user/permissions` 拉权限驱动菜单可见性\n- **PPT 导出能力**：技术雷达页面支持按项目类型 / 等级筛选导出 PPT\n- **3 套部署环境**：production / beta / test 各自 nginx 配置 + LLM endpoint 路由（见 `deploy/nginx/`）\n- **i18n 中英双语**：所有用户文案走 i18n key",
+        "known_limits": "- 预览部署用 vite dev server 模式，[`mock/api.mock.ts`](https://github.com/opensourceways/datastat-manage-website/blob/beta/mock/api.mock.ts) 会接管所有 `/api-id/*` 请求 — 预览看到的是 mock 的硬编码 zjw 权限，不是真实 IDP"
+      }
     },
     {
-      "owner": "opensourceways",
-      "name": "om-dataarts",
+      "owner":  "opensourceways",
+      "name":   "om-dataarts",
       "branch": "main",
-      "role": "data-collection",
-      "role_label": "📥 数据采集器",
-      "include_matrix": false,
-      "capability": "- **多源数据采集**：GitHub / Gitee / GitCode 三平台仓库 / Issue / PR / Comment / Star / Fork 等元数据\n- **PG 数据落地**：唯一写入方，按社区分表（`dws_<community>_*` 系列）\n- **采集任务幂等**：可重入重跑，失败写 `failed_tasks` 不静默吞错\n- **多社区扩展**：通过 `communities/<name>.yaml` 注册新社区即可",
-      "body_extra": "- 跨社区采集频次受平台限流影响，部分边界情况会延后到下一轮重试"
+      "title_template":            "{tag} — om-dataarts（数据中台数据采集）",
+      "body_template_file":        "submodule-body.template.md",
+      "tag_message_template_file": "submodule-tag-message.txt",
+      "context": {
+        "role_label":   "om-dataarts — 数据采集器",
+        "capability":   "- **多源数据采集**：GitHub / Gitee / GitCode 三平台仓库 / Issue / PR / Comment / Star / Fork 等元数据\n- **PG 数据落地**：唯一写入方，按社区分表（`dws_<community>_*` 系列）\n- **采集任务幂等**：可重入重跑，失败写 `failed_tasks` 表不静默吞错\n- **多社区扩展**：通过 `communities/<name>.yaml` 注册新社区即可",
+        "known_limits": "- 跨平台采集频次受 GitHub / Gitee / GitCode 限流影响，部分边界情况会延后到下一轮重试"
+      }
     },
     {
-      "owner": "opensourceways",
-      "name": "om-deployment",
+      "owner":  "opensourceways",
+      "name":   "om-deployment",
       "branch": "main",
-      "role": "platform-deploy",
-      "role_label": "🛠️ 平台级部署清单",
-      "include_matrix": false,
-      "capability": "- **平台级 K8s 资源**：Ingress / certmanager / nginx-controller 等共享基础设施 yaml\n- **多社区 namespace 模板**：`config/community/<name>/` 下每个社区一份独立配置",
-      "body_extra": "- TLS 证书自动续期需要 cert-manager 的 ClusterIssuer 提前配好；初次接入新域名时仍需 SRE 手动核对"
+      "title_template":            "{tag} — om-deployment（数据中台平台部署清单）",
+      "body_template_file":        "submodule-body.template.md",
+      "tag_message_template_file": "submodule-tag-message.txt",
+      "context": {
+        "role_label":   "om-deployment — 平台级部署清单",
+        "capability":   "- **平台级 K8s 资源**：Ingress / cert-manager / nginx-controller 等共享基础设施 yaml\n- **多社区 namespace 模板**：`config/community/<name>/` 下每个社区一份独立配置",
+        "known_limits": "- TLS 证书自动续期依赖 cert-manager ClusterIssuer 提前配好；初次接入新域名时仍需 SRE 手动核对"
+      }
     }
   ]
 }

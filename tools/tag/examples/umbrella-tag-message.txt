@@ -1,0 +1,12 @@
+{tag} — {project_display_name} 基线版本（umbrella）
+
+仓库：    {owner}/{repo}
+分支：    {branch}
+commit：  {sha}
+发布日期：{date}
+角色：    umbrella（流水线主控）
+
+本基线锁定全部 submodule SHA，详细兼容性矩阵 + 已知限制见 release page：
+{umbrella_tag_url}
+
+发布工具：opensourceways/agent-development-specification/tools/tag/release.py

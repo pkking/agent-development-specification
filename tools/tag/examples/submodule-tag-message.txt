@@ -1,0 +1,12 @@
+{tag} — {role_label}
+
+仓库：    {owner}/{repo}
+分支：    {branch}
+commit：  {sha}
+发布日期：{date}
+
+本仓 {tag} 是 {umbrella_owner}/{umbrella_repo} 基线 {tag} 的一部分。
+跨仓兼容性矩阵 + 整体能力清单见 umbrella release：
+{umbrella_tag_url}
+
+发布工具：opensourceways/agent-development-specification/tools/tag/release.py
