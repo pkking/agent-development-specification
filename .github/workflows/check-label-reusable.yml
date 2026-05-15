@@ -1,0 +1,35 @@
+name: check-label-reusable
+
+on:
+  workflow_call:
+    inputs:
+      runs-on:
+        description: 'Runner to use for the job'
+        required: true
+        type: string
+        default: 'ubuntu-latest'
+
+permissions:
+  pull-requests: read
+
+jobs:
+  check-label:
+    name: check-label
+    runs-on: ${{ inputs.runs-on }}
+    container:
+      image: ubuntu:24.04
+    steps:
+      - name: Validate PR labels
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const labels = context.payload.pull_request.labels.map((label) => label.name);
+            if (labels.includes('enhancement') && !labels.includes('accepted')) {
+              core.setFailed('enhancement PRs must be linked to an accepted issue.');
+            }
+            if (labels.includes('need_security') && !labels.includes('need_design')) {
+              core.setFailed('need_security requires need_design.');
+            }
+            if (labels.includes('need_ux') && !labels.includes('need_design')) {
+              core.setFailed('need_ux requires need_design.');
+            }

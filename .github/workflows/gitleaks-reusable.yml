@@ -1,0 +1,44 @@
+name: gitleaks-reusable
+
+on:
+  workflow_call:
+    inputs:
+      runs-on:
+        description: 'Runner to use for the job'
+        required: true
+        type: string
+        default: 'ubuntu-latest'
+    secrets:
+      github-token:
+        description: 'GitHub token'
+        required: false
+      gitleaks-license:
+        description: 'Gitleaks license for private repositories'
+        required: false
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  gitleaks:
+    name: gitleaks
+    runs-on: ${{ inputs.runs-on }}
+    container:
+      image: golang:1.22-bookworm
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Configure git safe directory
+        shell: bash
+        run: git config --global --add safe.directory '*'
+
+      - name: Gitleaks secret scan
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.github-token || github.token }}
+          GITLEAKS_LICENSE: ${{ secrets.gitleaks-license }}
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: false

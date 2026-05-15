@@ -1,0 +1,48 @@
+name: document-gate-reusable
+
+on:
+  workflow_call:
+    inputs:
+      runs-on:
+        description: 'Runner to use for the job'
+        required: true
+        type: string
+        default: 'ubuntu-latest'
+      exempt-labels:
+        description: 'Labels that exempt from document gate (comma-separated)'
+        required: false
+        type: string
+        default: 'bug,need_light,task'
+
+permissions:
+  pull-requests: read
+  issues: read
+
+jobs:
+  document-gate:
+    name: document-gate
+    runs-on: ${{ inputs.runs-on }}
+    container:
+      image: ubuntu:24.04
+    steps:
+      - name: Validate linked issue and document gate preconditions
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const body = context.payload.pull_request.body || '';
+            const labels = context.payload.pull_request.labels.map((label) => label.name);
+            const exemptLabels = '${{ inputs.exempt-labels }}'.split(',').map(l => l.trim());
+            
+            if (labels.some(label => exemptLabels.includes(label))) {
+              core.info(`PR has exempt label, skipping document gate.`);
+              return;
+            }
+            
+            const issueUrl = (body.match(/resolve[sd]?\s+(https?:\/\/\S+)/i) || [])[1];
+            if (!issueUrl) {
+              core.setFailed('PR description must include a resolved issue URL for design/release document checks.');
+              return;
+            }
+            
+            core.info(`Linked issue: ${issueUrl}`);
+            core.info('TODO: checkout infra_docs/backlog and port design_doc_check.sh / publish_doc_check.sh content validation.');

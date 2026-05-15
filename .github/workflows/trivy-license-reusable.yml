@@ -1,0 +1,44 @@
+name: trivy-license-reusable
+
+on:
+  workflow_call:
+    inputs:
+      runs-on:
+        description: 'Runner to use for the job'
+        required: true
+        type: string
+        default: 'ubuntu-latest'
+      exit-code:
+        description: 'Exit code when license issues found'
+        required: false
+        type: string
+        default: '0'
+
+permissions:
+  contents: read
+
+jobs:
+  trivy-license:
+    name: trivy-license
+    runs-on: ${{ inputs.runs-on }}
+    container:
+      image: ubuntu:24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install CA certificates
+        shell: bash
+        run: |
+          set -euo pipefail
+          apt-get update
+          apt-get install -y ca-certificates
+
+      - name: Trivy license scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: license
+          format: table
+          exit-code: ${{ inputs.exit-code }}
