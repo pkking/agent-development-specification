@@ -1,12 +1,12 @@
 # {tag} — {role_label}
 
-| 字段 | 值 |
-|---|---|
-| 仓库 | [`{owner}/{repo}`]({repo_url}) |
-| 分支 | `{branch}` |
-| 锁定 commit | [`{sha_short}`]({commit_url}) |
-| 发布日期 | {date} |
-| 源码 zip | [{repo}-{tag}.zip]({source_zip_url}) |
+| 字段        | 值                                      |
+| ----------- | --------------------------------------- |
+| 仓库        | [`{owner}/{repo}`]({repo_url})          |
+| 分支        | `{branch}`                              |
+| 锁定 commit | [`{sha_short}`]({commit_url})           |
+| 发布日期    | {date}                                  |
+| 源码 zip    | [{repo}-{tag}.zip]({source_zip_url})    |
 | 源码 tar.gz | [{repo}-{tag}.tar.gz]({source_tgz_url}) |
 
 ---
@@ -28,15 +28,15 @@
 
 ## 📅 版本元信息
 
-| 字段 | 值 |
-|---|---|
-| 版本号 | `{tag}` |
-| 发布日期 | {date} |
-| 基线类型 | baseline release |
-| 分支 | `{branch}` |
-| 锁定 SHA | `{sha}` |
+| 字段     | 值                                                              |
+| -------- | --------------------------------------------------------------- |
+| 版本号   | `{tag}`                                                         |
+| 发布日期 | {date}                                                          |
+| 基线类型 | baseline release                                                |
+| 分支     | `{branch}`                                                      |
+| 锁定 SHA | `{sha}`                                                         |
 | Umbrella | [`{umbrella_owner}/{umbrella_repo}` v1.0.0]({umbrella_tag_url}) |
-| 后续策略 | 补丁 `v1.0.x` / 向前兼容功能 `v1.y.0` / 不兼容 `v2.0.0` |
+| 后续策略 | 补丁 `v1.0.x` / 向前兼容功能 `v1.y.0` / 不兼容 `v2.0.0`         |
 
 ---
 

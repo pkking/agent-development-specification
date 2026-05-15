@@ -18,6 +18,7 @@ Go build and test coverage workflow with incremental coverage analysis.
 **Coverage Thresholds:**
 
 Coverage thresholds are defined at the organization level and are **not configurable** per project:
+
 - Full coverage threshold: **10%** (minimum overall coverage)
 - Incremental coverage threshold: **80%** (minimum coverage for changed code)
 
