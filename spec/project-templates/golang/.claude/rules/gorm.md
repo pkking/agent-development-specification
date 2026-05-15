@@ -1,9 +1,12 @@
 # GORM 操作规范
 
 ---
+
 paths:
-  - "**/infrastructure/repositoryimpl/**/*.go"
-  - "**/dao/**/*.go"
+
+- "**/infrastructure/repositoryimpl/**/\*.go"
+- "**/dao/**/\*.go"
+
 ---
 
 ## Context 传递规范（关键）
@@ -28,6 +31,7 @@ type UserRepo interface {
 ```
 
 **接口层缺少 ctx 的后果**：
+
 - 调用方（App 层）无法将 request context 传入，trace_id 和超时在接口边界丢失
 - 事务对象无法通过 context 传递，导致事务内操作在事务外执行
 
@@ -55,6 +59,7 @@ func (impl *userImpl) Add(ctx context.Context, v *domain.User) error {
 ```
 
 **原因**：
+
 - `dao.New(ctx)`：若 ctx 中携带事务对象则返回事务 DB，否则返回普通 DB
 - `WithContext(ctx)`：将 ctx 注入 GORM，用于超时控制和链路追踪
 
@@ -167,6 +172,7 @@ func (s *UserService) GetUser(ctx context.Context, id int64) (*domain.User, erro
 ```
 
 **分层职责**：
+
 - **DAO 层**：只负责数据库操作，返回 GORM 原始错误
 - **Repository 层**：转换为领域层通用错误（`ErrorResourceNotFound`、`ErrorDuplicateCreating`、`ErrorConcurrentUpdating`）；使用 `dao.IsRecordExists(err)` 检测 UNIQUE 冲突
 - **App 层**：只转换三种可预期错误（改变 HTTP 状态码），其余错误直接返回（Controller 映射为 HTTP 500）
@@ -264,6 +270,7 @@ if err := postgresql.Init(&cfg, true); err != nil {
 ```
 
 **推荐值**（根据实际负载调整）：
+
 - `MaxConn`：500（高并发场景）
 - `MaxIdle`：MaxConn 的 50%
 - `Life`：2-5 分钟（避免数据库主动断开连接）

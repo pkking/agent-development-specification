@@ -1,11 +1,14 @@
 # API 设计规范
 
 ---
+
 paths:
-  - "**/*handler*.go"
-  - "**/*controller*.go"
-  - "**/api/**/*.go"
-  - "**/router*.go"
+
+- "\**/*handler\*.go"
+- "\**/*controller\*.go"
+- "**/api/**/\*.go"
+- "\*_/router_.go"
+
 ---
 
 ## 统一响应格式
@@ -44,6 +47,7 @@ engine.Use(
 ```
 
 中间件行为：
+
 1. 从 `X-Request-Id` 请求头读取 trace_id
 2. 缺失时自动生成 UUID
 3. 存入 `c.Set("trace_id", traceID)`
@@ -83,15 +87,15 @@ func (h *UserHandler) GetUser(c *gin.Context) {
 
 **框架响应函数对应关系：**
 
-| 场景 | 函数 | HTTP 状态码 |
-|------|------|-----------|
-| GET 成功 | `controller.SendRespOfGet(c, data)` | 200 |
-| POST 成功 | `controller.SendRespOfPost(c, data)` | 201 |
-| PUT 成功 | `controller.SendRespOfPut(c, data)` | 202 |
-| DELETE 成功 | `controller.SendRespOfDelete(c)` | 204 |
-| 请求体绑定失败 | `controller.SendBadRequestBody(c, err)` | 400 |
-| 请求参数错误 | `controller.SendBadRequestParam(c, err)` | 400 |
-| 业务/系统错误 | `controller.SendError(c, err)` | 自动映射 |
+| 场景           | 函数                                     | HTTP 状态码 |
+| -------------- | ---------------------------------------- | ----------- |
+| GET 成功       | `controller.SendRespOfGet(c, data)`      | 200         |
+| POST 成功      | `controller.SendRespOfPost(c, data)`     | 201         |
+| PUT 成功       | `controller.SendRespOfPut(c, data)`      | 202         |
+| DELETE 成功    | `controller.SendRespOfDelete(c)`         | 204         |
+| 请求体绑定失败 | `controller.SendBadRequestBody(c, err)`  | 400         |
+| 请求参数错误   | `controller.SendBadRequestParam(c, err)` | 400         |
+| 业务/系统错误  | `controller.SendError(c, err)`           | 自动映射    |
 
 - Handler 函数体不超过 30 行，超过时拆分为 service 方法
 - 不得在 Handler 层直接操作数据库
@@ -128,6 +132,7 @@ func (h *OrderHandler) ListOrders(c *gin.Context) {
 ```
 
 **固定参数名：**
+
 - `page_num`：页码（从 1 开始）
 - `count_perpage`：每页数量
 - `count`：是否返回总数（`true`/`false`）
@@ -156,6 +161,7 @@ func (h *OrderHandler) ListOrders(c *gin.Context) {
 ```
 
 **固定参数名：**
+
 - `orderby`：排序字段
 - `order`：排序方向（`ASC` 或 `DESC`，不区分大小写）
 
@@ -193,14 +199,14 @@ type OrdersDTO struct {
 
 遵循 REST 语义，使用 HTTP 状态码反映请求结果：
 
-| 状态码 | 含义 | 使用场景 |
-|--------|------|---------|
-| `200` | 成功 | 请求正常处理完成 |
-| `400` | 参数或业务错误 | 参数绑定失败、业务规则不满足 |
-| `401` | 未认证 | 未登录或 Token 无效 |
-| `403` | 无权限 | 已认证但无操作权限 |
-| `404` | 资源不存在 | 指定资源未找到（含路由不存在） |
-| `500` | 服务内部错误 | 未预期异常，需人工介入 |
+| 状态码 | 含义           | 使用场景                       |
+| ------ | -------------- | ------------------------------ |
+| `200`  | 成功           | 请求正常处理完成               |
+| `400`  | 参数或业务错误 | 参数绑定失败、业务规则不满足   |
+| `401`  | 未认证         | 未登录或 Token 无效            |
+| `403`  | 无权限         | 已认证但无操作权限             |
+| `404`  | 资源不存在     | 指定资源未找到（含路由不存在） |
+| `500`  | 服务内部错误   | 未预期异常，需人工介入         |
 
 - 业务错误通过 `code` 字段（错误码字符串）进一步区分
 - **禁止**将所有错误统一返回 `200` 再靠 `code` 区分，这违反 HTTP 语义
@@ -238,15 +244,15 @@ common:
   rate_limiter:
     rate_limit:
       - route: "/internal/v1/heartbeat"
-        burst_num: 1    # 瞬时最大突发请求数
+        burst_num: 1 # 瞬时最大突发请求数
         request_num: 20 # 每秒最大请求数
 ```
 
-| 字段 | 默认值 | 说明 |
-|------|--------|------|
-| `route` | — | 路由前缀，精确匹配请求 URI |
-| `request_num` | 500 | 每秒最大请求数（令牌桶补充速率） |
-| `burst_num` | 100 | 瞬时突发允许量（令牌桶容量） |
+| 字段          | 默认值 | 说明                             |
+| ------------- | ------ | -------------------------------- |
+| `route`       | —      | 路由前缀，精确匹配请求 URI       |
+| `request_num` | 500    | 每秒最大请求数（令牌桶补充速率） |
+| `burst_num`   | 100    | 瞬时突发允许量（令牌桶容量）     |
 
 - 不配置时，心跳接口使用 `default` 规则（`request_num: 500`，`burst_num: 100`）
 - 心跳接口流量由 K8s 探针产生，`request_num` 建议设为探针频率的 2-3 倍

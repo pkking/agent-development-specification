@@ -1,8 +1,11 @@
 # DDD 分层架构规范
 
 ---
+
 paths:
-  - "**/*.go"
+
+- "\*_/_.go"
+
 ---
 
 ## 四层结构与依赖方向
@@ -13,12 +16,12 @@ Controller 层  →  App 层  →  Domain 层  ←  Infrastructure 层
 
 依赖规则：外层依赖内层接口，禁止反向依赖。
 
-| 层 | 目录 | 职责 |
-|----|------|------|
-| Controller | `*/controller/` | HTTP 参数绑定、认证、调用 App Service |
-| App | `*/app/` | 用例编排、事务边界、错误转换 |
-| Domain | `*/domain/` | 业务规则、聚合根、值对象、领域接口 |
-| Infrastructure | `*/infrastructure/` | 接口实现（数据库、外部服务） |
+| 层             | 目录                | 职责                                  |
+| -------------- | ------------------- | ------------------------------------- |
+| Controller     | `*/controller/`     | HTTP 参数绑定、认证、调用 App Service |
+| App            | `*/app/`            | 用例编排、事务边界、错误转换          |
+| Domain         | `*/domain/`         | 业务规则、聚合根、值对象、领域接口    |
+| Infrastructure | `*/infrastructure/` | 接口实现（数据库、外部服务）          |
 
 ## Domain 层规范
 
@@ -221,15 +224,15 @@ func (s *orderApp) Cancel(ctx context.Context, id int64, user *User) error {
 
 ### 命名规范
 
-| 类型 | 命名 | 示例 |
-|------|------|------|
-| 输入命令对象 | `CmdToXxx` | `CmdToCreateOrder` |
-| 列表查询命令 | `CmdToListXxx = repository.ListOpt`（类型别名） | `CmdToListOrders = repository.ListOpt` |
-| 单实体输出 | `XxxDTO` | `OrderDTO` |
-| 操作特定输出 | `XxxResultDTO` | `CreateOrderResultDTO` |
-| 列表输出 | `XxxsDTO` | `OrdersDTO` |
-| 请求→命令转换 | `req.toCmd()` | `reqToCreateOrder.toCmd()` |
-| 实体→DTO 转换 | `toXxxDTO(v)` | `toOrderDTO(v)` |
+| 类型          | 命名                                            | 示例                                   |
+| ------------- | ----------------------------------------------- | -------------------------------------- |
+| 输入命令对象  | `CmdToXxx`                                      | `CmdToCreateOrder`                     |
+| 列表查询命令  | `CmdToListXxx = repository.ListOpt`（类型别名） | `CmdToListOrders = repository.ListOpt` |
+| 单实体输出    | `XxxDTO`                                        | `OrderDTO`                             |
+| 操作特定输出  | `XxxResultDTO`                                  | `CreateOrderResultDTO`                 |
+| 列表输出      | `XxxsDTO`                                       | `OrdersDTO`                            |
+| 请求→命令转换 | `req.toCmd()`                                   | `reqToCreateOrder.toCmd()`             |
+| 实体→DTO 转换 | `toXxxDTO(v)`                                   | `toOrderDTO(v)`                        |
 
 > `XxxResultDTO` 用于创建/更新操作的响应体与查询响应体结构不同时，相同时可直接复用 `XxxDTO`。
 
@@ -440,6 +443,7 @@ func (s *orderApp) Cancel(ctx context.Context, id int64, user *User) error {
 ```
 
 **trade-off 说明：**
+
 - 避免的风险：事务提交后发布失败导致消息丢失，业务中断且链路追踪困难
 - 承担的风险：消息发布成功但事务随后回滚，消费者收到"幻象消息"
 

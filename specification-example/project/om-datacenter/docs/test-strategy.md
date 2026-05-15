@@ -4,13 +4,13 @@
 
 ## 1. 分层范围
 
-| 层 | 范围 | 跑哪 | 时长上限 |
-|---|---|---|---|
-| smoke | 跨子仓基本启动 | ai-dev-runner | 5 min |
-| UT | 各子仓内部 | ai-dev-runner | 10 min |
-| contract | APIMagic ↔ datastat 接口 | ai-dev-runner | 5 min |
-| integration | om-dataarts + APIMagic + DB | 预览 namespace | 20 min |
-| e2e | 用户访问 datastat 完整链路 | 预览 namespace | 30 min |
+| 层          | 范围                        | 跑哪           | 时长上限 |
+| ----------- | --------------------------- | -------------- | -------- |
+| smoke       | 跨子仓基本启动              | ai-dev-runner  | 5 min    |
+| UT          | 各子仓内部                  | ai-dev-runner  | 10 min   |
+| contract    | APIMagic ↔ datastat 接口    | ai-dev-runner  | 5 min    |
+| integration | om-dataarts + APIMagic + DB | 预览 namespace | 20 min   |
+| e2e         | 用户访问 datastat 完整链路  | 预览 namespace | 30 min   |
 
 ## 2. 覆盖率门槛
 

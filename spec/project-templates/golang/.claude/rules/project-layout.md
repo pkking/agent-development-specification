@@ -1,8 +1,11 @@
 # 项目目录结构与命名规范
 
 ---
+
 paths:
-  - "**/*.go"
+
+- "\*_/_.go"
+
 ---
 
 ## 标准目录树
@@ -58,18 +61,18 @@ paths:
 
 ## 包名（package name）约定
 
-| 目录 | package 名 |
-|------|-----------|
-| `<module>/domain/` | `domain` |
-| `<module>/domain/dp/` | `dp` |
-| `<module>/domain/repository/` | `repository` |
-| `<module>/app/` | `app` |
-| `<module>/controller/` | `controller` |
+| 目录                                      | package 名       |
+| ----------------------------------------- | ---------------- |
+| `<module>/domain/`                        | `domain`         |
+| `<module>/domain/dp/`                     | `dp`             |
+| `<module>/domain/repository/`             | `repository`     |
+| `<module>/app/`                           | `app`            |
+| `<module>/controller/`                    | `controller`     |
 | `<module>/infrastructure/repositoryimpl/` | `repositoryimpl` |
-| `<module>/infrastructure/<concept>impl/` | `<concept>impl` |
-| `server/` | `server` |
-| `config/` | `config` |
-| `common/domain/<concept>/` | `<concept>` |
+| `<module>/infrastructure/<concept>impl/`  | `<concept>impl`  |
+| `server/`                                 | `server`         |
+| `config/`                                 | `config`         |
+| `common/domain/<concept>/`                | `<concept>`      |
 
 > 多个业务模块都叫 `package domain`、`package app`、`package controller` 是正常的，Go 通过导入路径区分，包名无需加模块前缀。
 
@@ -79,16 +82,16 @@ paths:
 
 ### 各层核心类型
 
-| 层 | 类型 | 命名规则 | 示例 |
-|----|------|---------|------|
-| Domain | 聚合根 | `<Module>`（公有） | `Errata`、`ErrataReview` |
-| Domain | 值对象构造函数 | `New<Concept>(v string) (string, error)` | `NewStatus`、`NewEmail` |
-| App | AppService 接口 | `<Module>AppService` | `ErrataAppService` |
-| App | AppService 实现 | `<module>App`（私有） | `errataApp` |
-| Controller | Controller 结构体 | `<Module>Controller` | `ErrataController` |
-| Controller | 路由注册函数 | `AddWebRouterFor<Module>Controller` | `AddWebRouterForErrataController` |
-| Infrastructure | Repository 实现 | `<module>Impl`（私有） | `errataImpl` |
-| Infrastructure | DO 模型 | `<module>DO`（私有） | `errataDO` |
+| 层             | 类型              | 命名规则                                 | 示例                              |
+| -------------- | ----------------- | ---------------------------------------- | --------------------------------- |
+| Domain         | 聚合根            | `<Module>`（公有）                       | `Errata`、`ErrataReview`          |
+| Domain         | 值对象构造函数    | `New<Concept>(v string) (string, error)` | `NewStatus`、`NewEmail`           |
+| App            | AppService 接口   | `<Module>AppService`                     | `ErrataAppService`                |
+| App            | AppService 实现   | `<module>App`（私有）                    | `errataApp`                       |
+| Controller     | Controller 结构体 | `<Module>Controller`                     | `ErrataController`                |
+| Controller     | 路由注册函数      | `AddWebRouterFor<Module>Controller`      | `AddWebRouterForErrataController` |
+| Infrastructure | Repository 实现   | `<module>Impl`（私有）                   | `errataImpl`                      |
+| Infrastructure | DO 模型           | `<module>DO`（私有）                     | `errataDO`                        |
 
 ### Handler 方法命名
 
@@ -107,32 +110,32 @@ func (ctl *ErrataController) CreateHandler(c *gin.Context) {}
 
 常用动作名约定：
 
-| 操作 | 方法名 |
-|------|-------|
-| 创建 | `Create` |
-| 查询单个 | `Get` |
-| 查询列表 | `List` |
-| 更新 | `Update` 或语义化动作名（`Resubmit`、`Revocate`） |
-| 删除 | `Remove` |
+| 操作     | 方法名                                            |
+| -------- | ------------------------------------------------- |
+| 创建     | `Create`                                          |
+| 查询单个 | `Get`                                             |
+| 查询列表 | `List`                                            |
+| 更新     | `Update` 或语义化动作名（`Resubmit`、`Revocate`） |
+| 删除     | `Remove`                                          |
 
 ---
 
 ## 文件命名约定
 
-| 文件 | 位置 | 说明 |
-|------|------|------|
-| `<aggregate>.go` | `domain/` | 聚合根定义，一个聚合根一个文件 |
-| `errors.go` | `domain/` | 该模块所有错误码常量 |
-| `<concept>.go` | `domain/dp/` | 值对象，如 `status.go`、`email.go` |
-| `repo.go` | `domain/repository/` | Repository 接口定义 |
-| `event.go` | `domain/event/` | 领域事件定义（有需要时） |
-| `app.go` | `app/` | AppService 接口 + 实现（同文件） |
-| `dto.go` | `app/` | 所有 Cmd 和 DTO |
-| `<module>.go` | `controller/` | Controller + Handler + 路由注册函数 |
-| `request.go` | `controller/` | 所有请求体结构体（reqToXxx） |
-| `<aggregate>.go` | `repositoryimpl/` | Repository 实现 |
-| `<aggregate>_do.go` | `repositoryimpl/` | DO 模型（与实现分离） |
-| `config.go` | 各层 | 本层/本模块的配置 struct |
+| 文件                | 位置                 | 说明                                |
+| ------------------- | -------------------- | ----------------------------------- |
+| `<aggregate>.go`    | `domain/`            | 聚合根定义，一个聚合根一个文件      |
+| `errors.go`         | `domain/`            | 该模块所有错误码常量                |
+| `<concept>.go`      | `domain/dp/`         | 值对象，如 `status.go`、`email.go`  |
+| `repo.go`           | `domain/repository/` | Repository 接口定义                 |
+| `event.go`          | `domain/event/`      | 领域事件定义（有需要时）            |
+| `app.go`            | `app/`               | AppService 接口 + 实现（同文件）    |
+| `dto.go`            | `app/`               | 所有 Cmd 和 DTO                     |
+| `<module>.go`       | `controller/`        | Controller + Handler + 路由注册函数 |
+| `request.go`        | `controller/`        | 所有请求体结构体（reqToXxx）        |
+| `<aggregate>.go`    | `repositoryimpl/`    | Repository 实现                     |
+| `<aggregate>_do.go` | `repositoryimpl/`    | DO 模型（与实现分离）               |
+| `config.go`         | 各层                 | 本层/本模块的配置 struct            |
 
 ---
 
@@ -152,6 +155,7 @@ type Errata struct {
 ```
 
 **trade-off 说明**：
+
 - 公有字段便于 DO 转换和测试，减少 getter 模板代码
 - 风险：外部代码可能绕过聚合根方法直接修改字段，须依赖 Code Review 防止
 
@@ -381,17 +385,18 @@ services.orderApp = app.NewOrderAppService(repo, tx)
 
 ### 命令行参数规范
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `--port` | int | 否 | 监听端口，默认 8888 |
-| `--config-file` | string | **是** | 配置文件路径，启动时校验非空 |
-| `--tls-cert` | string | 否 | TLS 证书文件路径，为空时使用 HTTP |
-| `--tls-key` | string | 否 | TLS 私钥文件路径 |
-| `--grace-period` | duration | 否 | 优雅关闭等待时长，默认 180s |
-| `--rm-config` | bool | 否 | 启动后删除配置文件（K8s Secret 挂载场景） |
-| `--enable-debug` | bool | 否 | 开启 Debug 日志级别 |
+| 参数             | 类型     | 必填   | 说明                                      |
+| ---------------- | -------- | ------ | ----------------------------------------- |
+| `--port`         | int      | 否     | 监听端口，默认 8888                       |
+| `--config-file`  | string   | **是** | 配置文件路径，启动时校验非空              |
+| `--tls-cert`     | string   | 否     | TLS 证书文件路径，为空时使用 HTTP         |
+| `--tls-key`      | string   | 否     | TLS 私钥文件路径                          |
+| `--grace-period` | duration | 否     | 优雅关闭等待时长，默认 180s               |
+| `--rm-config`    | bool     | 否     | 启动后删除配置文件（K8s Secret 挂载场景） |
+| `--enable-debug` | bool     | 否     | 开启 Debug 日志级别                       |
 
 **约束：**
+
 - 通过 `options` struct 集中管理，提供 `addFlags()` 和 `validate()` 方法，不得散放在 `main()` 中
 - `validate()` 必须校验 `--config-file` 非空，缺失则报错退出
 - **禁止使用 `os.Getenv()` 读取任何配置**（含敏感信息），所有配置统一通过 `--config-file` 指定的文件传递
@@ -666,4 +671,3 @@ func logRequest() gin.HandlerFunc {
 ```
 
 > `interrupts.WaitForGracefulShutdown()` 监听 SIGTERM/SIGINT，收到信号后等待 `GracePeriod` 内所有在途请求处理完毕再退出。K8s 的 `terminationGracePeriodSeconds` 应大于此值。
-

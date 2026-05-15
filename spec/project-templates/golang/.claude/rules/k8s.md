@@ -1,11 +1,14 @@
 # K8s 部署规范
 
 ---
+
 paths:
-  - "**/*.yaml"
-  - "**/*.yml"
-  - "**/Dockerfile"
-  - "**/helm/**"
+
+- "\*_/_.yaml"
+- "\*_/_.yml"
+- "\*\*/Dockerfile"
+- "**/helm/**"
+
 ---
 
 ## Dockerfile 规范
@@ -79,19 +82,19 @@ ENTRYPOINT ["/home/app/<binary_name>"]
 
 ### 强制要求
 
-| 要求 | 说明 |
-|------|------|
-| 基础镜像 | 统一使用 `openeuler/openeuler`；项目 Dockerfile 中必须指定具体版本 tag，禁止省略或使用 `latest` |
-| 多阶段构建 | 最终镜像不得包含编译工具链（go、gcc、wget 等） |
-| 非 root 用户 | 必须创建固定 UID/GID（推荐 1000）的专用用户，`-s /sbin/nologin` 禁止登录 |
-| 可执行文件权限 | `chmod 550`（owner/group 可读可执行，other 无权限） |
-| 其他文件权限 | `.bash*` 等配置文件 `chmod 640`；工作目录 `chmod 700` |
-| COPY 指定属主 | `COPY --chown=app:app`，禁止 COPY 后文件属主为 root |
-| 删除调试工具 | 必须删除 `/usr/share/gdb` 等调试组件及 `/tmp/*` |
-| 清除系统 banner | 清空 `/etc/issue`、`/etc/issue.net`、`/etc/motd` |
-| Shell 安全配置 | `.bashrc` 中写入 `set +o history`（禁止历史记录）和 `umask 027` |
-| 编译安全选项 | 必须使用 `-buildmode=pie` + `"-s -linkmode 'external' -extldflags '-Wl,-z,now'"` |
-| 禁止打包密钥 | 不得将配置文件、证书、密钥打包进镜像，通过 K8s Secret/ConfigMap 挂载 |
+| 要求            | 说明                                                                                            |
+| --------------- | ----------------------------------------------------------------------------------------------- |
+| 基础镜像        | 统一使用 `openeuler/openeuler`；项目 Dockerfile 中必须指定具体版本 tag，禁止省略或使用 `latest` |
+| 多阶段构建      | 最终镜像不得包含编译工具链（go、gcc、wget 等）                                                  |
+| 非 root 用户    | 必须创建固定 UID/GID（推荐 1000）的专用用户，`-s /sbin/nologin` 禁止登录                        |
+| 可执行文件权限  | `chmod 550`（owner/group 可读可执行，other 无权限）                                             |
+| 其他文件权限    | `.bash*` 等配置文件 `chmod 640`；工作目录 `chmod 700`                                           |
+| COPY 指定属主   | `COPY --chown=app:app`，禁止 COPY 后文件属主为 root                                             |
+| 删除调试工具    | 必须删除 `/usr/share/gdb` 等调试组件及 `/tmp/*`                                                 |
+| 清除系统 banner | 清空 `/etc/issue`、`/etc/issue.net`、`/etc/motd`                                                |
+| Shell 安全配置  | `.bashrc` 中写入 `set +o history`（禁止历史记录）和 `umask 027`                                 |
+| 编译安全选项    | 必须使用 `-buildmode=pie` + `"-s -linkmode 'external' -extldflags '-Wl,-z,now'"`                |
+| 禁止打包密钥    | 不得将配置文件、证书、密钥打包进镜像，通过 K8s Secret/ConfigMap 挂载                            |
 
 ## K8s 资源规范
 
@@ -138,12 +141,13 @@ readinessProbe:
 
 K8s Secret 以文件方式挂载后，服务读取完毕必须立即删除，防止敏感内容驻留磁盘。通过 `--rm-config` 参数启用，分两个阶段执行：
 
-| 阶段 | 文件 | 时机 | 实现位置 |
-|------|------|------|---------|
-| 1 | YAML 配置文件 | 解析完成后立即删除（`defer os.Remove`） | `config.LoadConfig` |
-| 2 | TLS 证书和密钥 | 服务启动后等待 `waitServerStart`（3s）再删 | `ServerOptions.clean()` |
+| 阶段 | 文件           | 时机                                       | 实现位置                |
+| ---- | -------------- | ------------------------------------------ | ----------------------- |
+| 1    | YAML 配置文件  | 解析完成后立即删除（`defer os.Remove`）    | `config.LoadConfig`     |
+| 2    | TLS 证书和密钥 | 服务启动后等待 `waitServerStart`（3s）再删 | `ServerOptions.clean()` |
 
 **约束：**
+
 - `clean()` 必须在 `interrupts.ListenAndServeTLS()` 之后调用，不得省略
 - 删除失败时必须 `logrus.Fatal`，不得静默忽略（`_ = os.Remove(...)` 是错误写法）
 - 等待时间 `waitServerStart` 不得缩短，确保 TLS 握手完成后再删证书

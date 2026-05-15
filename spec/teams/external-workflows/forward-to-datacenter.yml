@@ -35,7 +35,7 @@ jobs:
     timeout-minutes: 2
     env:
       GH_TOKEN: ${{ github.token }}
-      GH_REPO: ${{ github.repository }}   # menu job 不 checkout，gh 没法从 .git 推断仓库，必须显式给
+      GH_REPO: ${{ github.repository }} # menu job 不 checkout，gh 没法从 .git 推断仓库，必须显式给
       ISSUE: ${{ github.event.issue.number }}
       EVENT_NAME: ${{ github.event_name }}
     steps:
@@ -84,7 +84,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     env:
-      GH_REPO: ${{ github.repository }}   # 不 checkout，gh issue comment 需要显式仓库
+      GH_REPO: ${{ github.repository }} # 不 checkout，gh issue comment 需要显式仓库
       EVENT_TYPE: >-
         ${{
           (startsWith(github.event.comment.body, '[小数需求分析]') || startsWith(github.event.comment.body, '[数据中台需求分析]')) && 'backlog_analyze' ||

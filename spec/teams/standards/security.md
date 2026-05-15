@@ -10,10 +10,10 @@
 
 按 [`../../pipeline/generic-layer/credentials-storage.md`](../../pipeline/generic-layer/credentials-storage.md) 三档：
 
-| 档位 | 用途 | 注入方式 |
-|---|---|---|
-| GitHub Secret | CI 用 token / API key | workflow `env:` |
-| K8s Secret | 容器运行时 | `envFrom: secretRef` / volume mount |
+| 档位          | 用途                             | 注入方式                                           |
+| ------------- | -------------------------------- | -------------------------------------------------- |
+| GitHub Secret | CI 用 token / API key            | workflow `env:`                                    |
+| K8s Secret    | 容器运行时                       | `envFrom: secretRef` / volume mount                |
 | Vault sidecar | 高敏感凭据（DB root / 加密私钥） | `vault.hashicorp.com/agent-inject-secret-...` 注入 |
 
 ## 3. 安全编码

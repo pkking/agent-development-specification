@@ -8,13 +8,13 @@
 
 ## 2. 做什么
 
-| 步骤 | 操作 |
-|---|---|
-| 1 | 进入 `opensourceways/backlog` 仓的 Issues 页面 |
-| 2 | 点 New Issue，选合适模板（Feature Request / Bug Report） |
-| 3 | 标题：`[<服务名>] <一句话场景描述>` |
-| 4 | 正文：背景 + 现状 + 期望；按 issue 模板填字段 |
-| 5 | 不打 `accepted` 标签（由 maintainer 在阶段 2 打） |
+| 步骤 | 操作                                                     |
+| ---- | -------------------------------------------------------- |
+| 1    | 进入 `opensourceways/backlog` 仓的 Issues 页面           |
+| 2    | 点 New Issue，选合适模板（Feature Request / Bug Report） |
+| 3    | 标题：`[<服务名>] <一句话场景描述>`                      |
+| 4    | 正文：背景 + 现状 + 期望；按 issue 模板填字段            |
+| 5    | 不打 `accepted` 标签（由 maintainer 在阶段 2 打）        |
 
 ## 3. 团队 issue 工作流
 

@@ -4,12 +4,12 @@
 
 ## 1. 触发
 
-| 项 | 值 |
-|---|---|
-| 入口评论 | `[<服务名>需求实现]` |
-| 前置 | 流程 1 的需求 PR 必须已合入 |
-| 跑在哪 | ai-dev-runner + k8s-deployer |
-| 主调度 | [`../generic-layer/orchestrator.md`](../generic-layer/orchestrator.md) |
+| 项       | 值                                                                     |
+| -------- | ---------------------------------------------------------------------- |
+| 入口评论 | `[<服务名>需求实现]`                                                   |
+| 前置     | 流程 1 的需求 PR 必须已合入                                            |
+| 跑在哪   | ai-dev-runner + k8s-deployer                                           |
+| 主调度   | [`../generic-layer/orchestrator.md`](../generic-layer/orchestrator.md) |
 
 ## 2. 4 个 agent
 

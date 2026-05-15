@@ -5,10 +5,10 @@
 
 ## 1. 两类 runner 总览
 
-| Runner | 跑什么 | runs-on 标签 | 副本数（参考） | 代码 |
-|---|---|---|---|---|
-| `ai-dev-runner` | 流程 1 / 2 / 3 主体（4 agent 对抗 / orchestrate.sh / gates / tester） | `[self-hosted, ai-dev-runner]` | 3 | [`../../src/runner/ai-dev-runner/`](../../src/runner/ai-dev-runner/) |
-| `k8s-deployer` | 起 / 清理预览部署（PR preview / 流程 3 promote / `deploy.py`） | `[self-hosted, k8s-deployer]` | 2 | [`../../src/runner/k8s-deployer/`](../../src/runner/k8s-deployer/) |
+| Runner          | 跑什么                                                                | runs-on 标签                   | 副本数（参考） | 代码                                                                 |
+| --------------- | --------------------------------------------------------------------- | ------------------------------ | -------------- | -------------------------------------------------------------------- |
+| `ai-dev-runner` | 流程 1 / 2 / 3 主体（4 agent 对抗 / orchestrate.sh / gates / tester） | `[self-hosted, ai-dev-runner]` | 3              | [`../../src/runner/ai-dev-runner/`](../../src/runner/ai-dev-runner/) |
+| `k8s-deployer`  | 起 / 清理预览部署（PR preview / 流程 3 promote / `deploy.py`）        | `[self-hosted, k8s-deployer]`  | 2              | [`../../src/runner/k8s-deployer/`](../../src/runner/k8s-deployer/)   |
 
 两者**镜像不同、Dockerfile 不同、注入的 RBAC 权限不同**。下面分两段讲。
 
@@ -22,33 +22,33 @@ K8s `Deployment` + `ServiceAccount` + `RBAC` + `ConfigMap` + `Secret`。**镜像
 
 文件清单：
 
-| 文件 | 作用 |
-|---|---|
-| [`../../src/runner/ai-dev-runner/Dockerfile`](../../src/runner/ai-dev-runner/Dockerfile) | 镜像定义（组件清单见 §2.2） |
-| [`../../src/runner/ai-dev-runner/entrypoint.sh`](../../src/runner/ai-dev-runner/entrypoint.sh) | 容器入口：用 [`GH_RUNNER_TOKEN`](credentials-storage.md) 向 GitHub 注册 → 跑 `run.sh` 监听 job |
-| [`../../src/runner/ai-dev-runner/start-runner.sh`](../../src/runner/ai-dev-runner/start-runner.sh) | 本地 `docker run` 调试用（不是生产部署路径） |
-| [`../../src/runner/ai-dev-runner/build-and-push.sh`](../../src/runner/ai-dev-runner/build-and-push.sh) | 多架构镜像构建 + 推到 registry |
-| [`../../src/runner/ai-dev-runner/deployment.yaml`](../../src/runner/ai-dev-runner/deployment.yaml) | K8s Deployment（envFrom / volumeMounts / resources） |
-| [`../../src/runner/ai-dev-runner/rbac.yaml`](../../src/runner/ai-dev-runner/rbac.yaml) | ServiceAccount + Role + RoleBinding（最小权限）|
-| [`../../src/runner/ai-dev-runner/configmap.yaml`](../../src/runner/ai-dev-runner/configmap.yaml) | 非敏感配置 |
+| 文件                                                                                                   | 作用                                                                                           |
+| ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| [`../../src/runner/ai-dev-runner/Dockerfile`](../../src/runner/ai-dev-runner/Dockerfile)               | 镜像定义（组件清单见 §2.2）                                                                    |
+| [`../../src/runner/ai-dev-runner/entrypoint.sh`](../../src/runner/ai-dev-runner/entrypoint.sh)         | 容器入口：用 [`GH_RUNNER_TOKEN`](credentials-storage.md) 向 GitHub 注册 → 跑 `run.sh` 监听 job |
+| [`../../src/runner/ai-dev-runner/start-runner.sh`](../../src/runner/ai-dev-runner/start-runner.sh)     | 本地 `docker run` 调试用（不是生产部署路径）                                                   |
+| [`../../src/runner/ai-dev-runner/build-and-push.sh`](../../src/runner/ai-dev-runner/build-and-push.sh) | 多架构镜像构建 + 推到 registry                                                                 |
+| [`../../src/runner/ai-dev-runner/deployment.yaml`](../../src/runner/ai-dev-runner/deployment.yaml)     | K8s Deployment（envFrom / volumeMounts / resources）                                           |
+| [`../../src/runner/ai-dev-runner/rbac.yaml`](../../src/runner/ai-dev-runner/rbac.yaml)                 | ServiceAccount + Role + RoleBinding（最小权限）                                                |
+| [`../../src/runner/ai-dev-runner/configmap.yaml`](../../src/runner/ai-dev-runner/configmap.yaml)       | 非敏感配置                                                                                     |
 
 ### 2.2 镜像组件清单
 
 完整定义见 [Dockerfile](../../src/runner/ai-dev-runner/Dockerfile)。
 
-| 类目 | 组件 | 装它干啥 |
-|---|---|---|
-| 基础镜像 | `ubuntu:24.04` | 干净底座 |
-| 系统包 | `ca-certificates curl wget git jq unzip xz-utils gnupg lsb-release sudo iproute2` | 通用工具 |
-| 构建链 | `build-essential` | 编原生扩展 |
-| Python | `python3 python3-pip python3-venv` | agent 调脚本、`fetch-issue` action、`deploy.py` |
-| Node | `nodejs npm` | dev/tester agent 跑 `vitest` / `playwright`；npm 全局装 Claude CLI |
-| Java | `openjdk-17-jre-headless maven` | APIMagic 相关构建 |
-| K8s 工具 | `kubectl` + `helm` | tester agent 用 `kubectl exec` 验预览 pod；deploy 用 |
-| GitHub 工具 | `gh` CLI | 流程里所有 issue / PR 操作 |
-| LLM CLI | `@anthropic-ai/claude-code`（spec 推荐）/ `opencode`（om-datacenter 实际用）| 4 agent 跑 prompt |
-| GitHub Actions Runner | `actions/runner` v2.317.0，落在 `/home/runner/actions-runner/` | 接 GitHub 派单 |
-| 用户 | `runner`（非 root，带 NOPASSWD sudo） | 跑 job 的身份；`$HOME=/home/runner` |
+| 类目                  | 组件                                                                              | 装它干啥                                                           |
+| --------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| 基础镜像              | `ubuntu:24.04`                                                                    | 干净底座                                                           |
+| 系统包                | `ca-certificates curl wget git jq unzip xz-utils gnupg lsb-release sudo iproute2` | 通用工具                                                           |
+| 构建链                | `build-essential`                                                                 | 编原生扩展                                                         |
+| Python                | `python3 python3-pip python3-venv`                                                | agent 调脚本、`fetch-issue` action、`deploy.py`                    |
+| Node                  | `nodejs npm`                                                                      | dev/tester agent 跑 `vitest` / `playwright`；npm 全局装 Claude CLI |
+| Java                  | `openjdk-17-jre-headless maven`                                                   | APIMagic 相关构建                                                  |
+| K8s 工具              | `kubectl` + `helm`                                                                | tester agent 用 `kubectl exec` 验预览 pod；deploy 用               |
+| GitHub 工具           | `gh` CLI                                                                          | 流程里所有 issue / PR 操作                                         |
+| LLM CLI               | `@anthropic-ai/claude-code`（spec 推荐）/ `opencode`（om-datacenter 实际用）      | 4 agent 跑 prompt                                                  |
+| GitHub Actions Runner | `actions/runner` v2.317.0，落在 `/home/runner/actions-runner/`                    | 接 GitHub 派单                                                     |
+| 用户                  | `runner`（非 root，带 NOPASSWD sudo）                                             | 跑 job 的身份；`$HOME=/home/runner`                                |
 
 ### 2.3 部署步骤（团队 SRE 一次性跑一遍）
 
@@ -89,10 +89,10 @@ kubectl -n ci-runners get pods -l app=ai-dev-runner    # 应该 N 个 Running
 
 通过 `envFrom: secretRef` 一次性注入到容器 env，本目录 [`configmap.yaml`](../../src/runner/ai-dev-runner/configmap.yaml) 只放非敏感的：
 
-| 来源 | 字段 |
-|---|---|
-| ConfigMap `ai-dev-runner-config` | `GH_OWNER` / `GH_REPO` / `ANTHROPIC_BASE_URL` / `ANTHROPIC_MODEL` |
-| Secret `ai-dev-runner-secrets` | `GH_RUNNER_TOKEN` / [`ANTHROPIC_API_KEY`](credentials-storage.md) / `OPENCODE_API_KEY` / `BACKLOG_REPO_TOKEN` / `CROSS_REPO_TOKEN` / `AI_TEST_KUBECONFIG` / `LOCAL_DB_PASSWORD` |
+| 来源                             | 字段                                                                                                                                                                            |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ConfigMap `ai-dev-runner-config` | `GH_OWNER` / `GH_REPO` / `ANTHROPIC_BASE_URL` / `ANTHROPIC_MODEL`                                                                                                               |
+| Secret `ai-dev-runner-secrets`   | `GH_RUNNER_TOKEN` / [`ANTHROPIC_API_KEY`](credentials-storage.md) / `OPENCODE_API_KEY` / `BACKLOG_REPO_TOKEN` / `CROSS_REPO_TOKEN` / `AI_TEST_KUBECONFIG` / `LOCAL_DB_PASSWORD` |
 
 凭据存储分档规则：[`credentials-storage.md`](credentials-storage.md)。
 
@@ -100,12 +100,12 @@ kubectl -n ci-runners get pods -l app=ai-dev-runner    # 应该 N 个 Running
 
 参考 [`deployment.yaml`](../../src/runner/ai-dev-runner/deployment.yaml)：
 
-| 项 | 值 |
-|---|---|
-| requests | `cpu=500m memory=1Gi` |
-| limits | `cpu=4000m memory=8Gi` |
-| `/var/run/docker.sock`（hostPath） | 让 runner 容器调宿主机 Docker（如要 build 子镜像） |
-| `/workspaces`（PVC） | 流程 2 的 per-issue 工作区（`$WORKSPACE_DIR`），跨 job 持久 |
+| 项                                 | 值                                                          |
+| ---------------------------------- | ----------------------------------------------------------- |
+| requests                           | `cpu=500m memory=1Gi`                                       |
+| limits                             | `cpu=4000m memory=8Gi`                                      |
+| `/var/run/docker.sock`（hostPath） | 让 runner 容器调宿主机 Docker（如要 build 子镜像）          |
+| `/workspaces`（PVC）               | 流程 2 的 per-issue 工作区（`$WORKSPACE_DIR`），跨 job 持久 |
 
 ### 2.7 部署 vs 流水线时序
 
@@ -123,14 +123,14 @@ runner pod 在 $GITHUB_WORKSPACE 跑 yml 里的步骤（流程 1/2/3）
 
 ### 2.8 升级 / 扩容 / 故障排查
 
-| 场景 | 操作 |
-|---|---|
-| 升级镜像 | 改 Dockerfile → `./build-and-push.sh` → `kubectl set image deployment/ai-dev-runner runner=<new-tag>` |
-| 扩容 | `kubectl scale deployment/ai-dev-runner --replicas=N` |
-| runner 卡死 / 离线 | `kubectl delete pod -l app=ai-dev-runner -n ci-runners`（Deployment 自动重建并重新 register） |
-| 凭据轮换 | 更新 Secret → `kubectl rollout restart deployment/ai-dev-runner -n ci-runners` |
-| job 一直 queued 跑不起来 | 1) GitHub Settings → Actions → Runners 看 online 数；2) `kubectl describe pod` 看是否 ImagePullBackOff / 凭据缺失 |
-| job 跑到 Claude CLI 报 401 | `ANTHROPIC_API_KEY` 失效，按「凭据轮换」步骤 |
+| 场景                       | 操作                                                                                                              |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| 升级镜像                   | 改 Dockerfile → `./build-and-push.sh` → `kubectl set image deployment/ai-dev-runner runner=<new-tag>`             |
+| 扩容                       | `kubectl scale deployment/ai-dev-runner --replicas=N`                                                             |
+| runner 卡死 / 离线         | `kubectl delete pod -l app=ai-dev-runner -n ci-runners`（Deployment 自动重建并重新 register）                     |
+| 凭据轮换                   | 更新 Secret → `kubectl rollout restart deployment/ai-dev-runner -n ci-runners`                                    |
+| job 一直 queued 跑不起来   | 1) GitHub Settings → Actions → Runners 看 online 数；2) `kubectl describe pod` 看是否 ImagePullBackOff / 凭据缺失 |
+| job 跑到 Claude CLI 报 401 | `ANTHROPIC_API_KEY` 失效，按「凭据轮换」步骤                                                                      |
 
 ---
 
@@ -156,12 +156,12 @@ runner pod 在 $GITHUB_WORKSPACE 跑 yml 里的步骤（流程 1/2/3）
 
 ### 3.3 镜像组件清单（差异处）
 
-| 装了 | 未装（对比 ai-dev-runner） |
-|---|---|
-| Ubuntu 24.04 + `curl wget git jq python3 sudo` | — |
-| `kubectl` + `helm` | 没 Node / 没 Java / 没 Claude CLI / 没 build-essential |
-| GitHub Actions Runner | 同 ai-dev-runner |
-| 用户 `deployer`（非 root） | — |
+| 装了                                           | 未装（对比 ai-dev-runner）                             |
+| ---------------------------------------------- | ------------------------------------------------------ |
+| Ubuntu 24.04 + `curl wget git jq python3 sudo` | —                                                      |
+| `kubectl` + `helm`                             | 没 Node / 没 Java / 没 Claude CLI / 没 build-essential |
+| GitHub Actions Runner                          | 同 ai-dev-runner                                       |
+| 用户 `deployer`（非 root）                     | —                                                      |
 
 完整见 [Dockerfile](../../src/runner/k8s-deployer/Dockerfile)。
 
@@ -180,11 +180,11 @@ runner pod 在 $GITHUB_WORKSPACE 跑 yml 里的步骤（流程 1/2/3）
 
 同 §2.8，把 `ai-dev-runner` 换成 `k8s-deployer`。常见问题：
 
-| 现象 | 原因 / 处理 |
-|---|---|
-| `deploy.py` 报 `Forbidden: cannot create deployments` | RBAC 未应用或目标 namespace 不在 ClusterRoleBinding 范围内 |
-| 预览 Ingress 起得来但访问 502 | 看 `kubectl logs <preview-pod>`；多半是镜像启动失败而 readinessProbe 未及时拉低就绪 |
-| `cleanup` 删不掉 PVC | data-pod 模式默认保留 PVC 一段时间（按 service.yaml 配置），不是 bug |
+| 现象                                                  | 原因 / 处理                                                                         |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `deploy.py` 报 `Forbidden: cannot create deployments` | RBAC 未应用或目标 namespace 不在 ClusterRoleBinding 范围内                          |
+| 预览 Ingress 起得来但访问 502                         | 看 `kubectl logs <preview-pod>`；多半是镜像启动失败而 readinessProbe 未及时拉低就绪 |
+| `cleanup` 删不掉 PVC                                  | data-pod 模式默认保留 PVC 一段时间（按 service.yaml 配置），不是 bug                |
 
 ---
 

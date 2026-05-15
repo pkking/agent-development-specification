@@ -2,13 +2,13 @@
 
 ## 1. 部署模式
 
-| 子仓 | 模式 | 备注 |
-|---|---|---|
-| `datastat-manage-website` | `shared` | 静态文件，多 PR 共享 |
-| `APIMagic` | `dev-pod` | 每 PR 独立 |
-| `om-dataarts` | `data-pod` | 带 DB / 缓存 |
-| `om-deployment` | `none` | 工具仓，不部署 |
-| `om-dataarts-deployment` | `none` | 工具仓 |
+| 子仓                      | 模式       | 备注                 |
+| ------------------------- | ---------- | -------------------- |
+| `datastat-manage-website` | `shared`   | 静态文件，多 PR 共享 |
+| `APIMagic`                | `dev-pod`  | 每 PR 独立           |
+| `om-dataarts`             | `data-pod` | 带 DB / 缓存         |
+| `om-deployment`           | `none`     | 工具仓，不部署       |
+| `om-dataarts-deployment`  | `none`     | 工具仓               |
 
 ## 2. K8s 资源
 
@@ -17,11 +17,11 @@
 
 ## 3. 环境
 
-| 环境 | namespace | 域名 |
-|---|---|---|
+| 环境 | namespace | 域名                        |
+| ---- | --------- | --------------------------- |
 | 预览 | `ai-test` | `pr-<n>.ai.test.osinfra.cn` |
-| beta | `ai-beta` | `beta.ai.osinfra.cn` |
-| 生产 | `ai-prod` | `datastat.osinfra.cn` |
+| beta | `ai-beta` | `beta.ai.osinfra.cn`        |
+| 生产 | `ai-prod` | `datastat.osinfra.cn`       |
 
 ## 4. RPO / RTO
 

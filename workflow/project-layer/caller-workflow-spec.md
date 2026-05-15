@@ -41,12 +41,12 @@ jobs:
 
 ## 3. 触发词识别
 
-| 评论 | event_type |
-|---|---|
-| `[<服务名>需求]` | `trigger-menu` |
+| 评论                 | event_type            |
+| -------------------- | --------------------- |
+| `[<服务名>需求]`     | `trigger-menu`        |
 | `[<服务名>需求分析]` | `requirement-analyze` |
-| `[<服务名>需求实现]` | `implement-preview` |
-| `[<服务名>需求上线]` | `release-deploy` |
+| `[<服务名>需求实现]` | `implement-preview`   |
+| `[<服务名>需求上线]` | `release-deploy`      |
 
 ## 4. 白名单校验
 
