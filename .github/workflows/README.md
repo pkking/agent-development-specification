@@ -8,12 +8,13 @@ This directory contains reusable GitHub Actions workflows that can be called fro
 
 Go build and test coverage workflow with incremental coverage analysis.
 
+**Note:** This workflow fetches full git history (`fetch-depth: 0`) by default to support incremental coverage analysis. Checkout time may be slightly longer (10-30 seconds for typical projects) but is necessary for accurate diff-based coverage calculation.
+
 **Inputs:**
 
 - `runs-on` (required): Runner to use (default: `ubuntu-latest`)
 - `go-version` (optional): Go version (default: `1.22`)
 - `test-packages` (optional): Packages to test (default: `./...`)
-- `fetch-depth` (optional): Git fetch depth for checkout. Default is `0` (full history) to support incremental coverage analysis. Shallow clones (`1`) are not recommended as they prevent accurate diff generation for incremental coverage.
 
 **Coverage Thresholds:**
 

@@ -247,6 +247,13 @@ calculate_incremental_coverage() {
 generate_diff_file() {
     local output_file=$1
     
+    if [ -f .git/shallow ]; then
+        log_fail "Shallow clone detected! This workflow requires full git history (fetch-depth: 0)"
+        log_fail "Incremental coverage analysis cannot work with shallow clones"
+        log_fail "Please ensure checkout action uses fetch-depth: 0"
+        return 1
+    fi
+    
     # GitHub Actions environment
     if [ -n "$GITHUB_EVENT_PATH" ]; then
         local base_ref="${GITHUB_BASE_REF:-main}"
