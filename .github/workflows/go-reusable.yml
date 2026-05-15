@@ -1,0 +1,73 @@
+name: go-build-and-coverage-reusable
+
+on:
+  workflow_call:
+    inputs:
+      runs-on:
+        description: 'Runner to use for the job'
+        required: true
+        type: string
+        default: 'ubuntu-latest'
+      go-version:
+        description: 'Go version to use'
+        required: false
+        type: string
+        default: '1.22'
+      test-packages:
+        description: 'Go packages to test (space-separated)'
+        required: false
+        type: string
+        default: './...'
+    secrets:
+      gh-token:
+        description: 'GitHub token for accessing private repositories'
+        required: false
+
+permissions:
+  contents: read
+
+env:
+  GOPRIVATE: github.com/opensourceways/*
+  GONOSUMDB: github.com/opensourceways/*
+  GOPROXY: https://goproxy.cn,direct
+
+jobs:
+  build:
+    runs-on: ${{ inputs.runs-on }}
+    container:
+      image: golang:${{ inputs.go-version }}-bookworm
+    steps:
+    - name: Checkout
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+    - name: Configure git
+      shell: bash
+      run: |
+        set -euo pipefail
+        git config --global --add safe.directory '*'
+        if [ -n "${{ secrets.gh-token }}" ]; then
+          git config --global url."https://x-access-token:${{ secrets.gh-token }}@github.com/".insteadOf "https://github.com/"
+        fi
+
+    - name: Cache Go modules and build
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Build
+      shell: bash
+      run: |
+        set -euo pipefail
+        go build -v ./...
+
+    - name: Test Coverage
+      shell: bash
+      run: |
+        set -euo pipefail
+        go test -v -coverprofile=coverage.out ${{ inputs.test-packages }}
+        go tool cover -func=coverage.out | tail -1

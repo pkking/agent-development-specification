@@ -1,0 +1,35 @@
+name: check-branch-naming-reusable
+
+on:
+  workflow_call:
+    inputs:
+      runs-on:
+        description: 'Runner to use for the job'
+        required: true
+        type: string
+        default: 'ubuntu-latest'
+      allowed-prefixes:
+        description: 'Allowed branch prefixes (regex pattern)'
+        required: false
+        type: string
+        default: '^(feature|fix|bugfix|hotfix|release|refactor|chore|docs|test|ci)\/.+$'
+
+permissions:
+  pull-requests: read
+
+jobs:
+  check-branch-naming:
+    name: check-branch-naming
+    runs-on: ${{ inputs.runs-on }}
+    container:
+      image: ubuntu:24.04
+    steps:
+      - name: Validate branch name
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const branch = context.payload.pull_request.head.ref;
+            const allowed = new RegExp(process.env.ALLOWED_PREFIXES || '${{ inputs.allowed-prefixes }}');
+            if (!allowed.test(branch) && !branch.startsWith('dependabot/')) {
+              core.setFailed(`Branch name "${branch}" must use an approved prefix.`);
+            }

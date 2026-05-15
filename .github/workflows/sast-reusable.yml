@@ -1,0 +1,145 @@
+name: sast-reusable
+
+on:
+  workflow_call:
+    inputs:
+      runs-on:
+        description: 'Runner to use for the job'
+        required: true
+        type: string
+        default: 'ubuntu-latest'
+      go-version:
+        description: 'Go version to use'
+        required: false
+        type: string
+        default: '1.22'
+      java-version:
+        description: 'Java version to use'
+        required: false
+        type: string
+        default: '17'
+      python-version:
+        description: 'Python version to use'
+        required: false
+        type: string
+        default: '3.12'
+      node-version:
+        description: 'Node.js version to use'
+        required: false
+        type: string
+        default: '20'
+    secrets:
+      github-token:
+        description: 'GitHub token'
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  sast:
+    name: sast
+    runs-on: ${{ inputs.runs-on }}
+    container:
+      image: golang:${{ inputs.go-version }}-bookworm
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Configure git safe directory
+        shell: bash
+        run: git config --global --add safe.directory '*'
+
+      - name: Install common tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          apt-get update
+          apt-get install -y jq libxml2-utils
+
+      - name: Set up Go
+        if: hashFiles('**/go.mod') != ''
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Go SAST
+        if: hashFiles('**/go.mod') != ''
+        uses: securego/gosec@4a3bd8af174872c778439083ded7adbf3747e770 # v2.26.1
+        with:
+          args: ./...
+        env:
+          GITHUB_TOKEN: ${{ secrets.github-token || github.token }}
+          GOPRIVATE: github.com/opensourceways/*
+
+      - name: Set up Java
+        if: hashFiles('pom.xml') != ''
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.java-version }}
+          cache: maven
+
+      - name: Java SAST
+        if: hashFiles('pom.xml') != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn -B -DskipTests compile spotbugs:spotbugs
+          report="$(find . -path '*/target/spotbugsXml.xml' -o -path '*/target/spotbugs.xml' | head -n 1)"
+          if [ -n "$report" ] && [ -s "$report" ]; then
+            high_count="$(xmllint --xpath "count(//BugInstance[@priority='1'])" "$report" 2>/dev/null || echo 0)"
+            total_count="$(xmllint --xpath "count(//BugInstance)" "$report" 2>/dev/null || echo 0)"
+            awk -v high="$high_count" -v total="$total_count" 'BEGIN { exit !((high > 0) || (total > 10)) }' && {
+              xmllint --xpath "//BugInstance" "$report" || true
+              exit 1
+            } || true
+          fi
+
+      - name: Set up Python
+        if: hashFiles('**/*.py') != ''
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache: pip
+
+      - name: Python SAST
+        if: hashFiles('**/*.py') != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          [ -f requirements.txt ] && pip install -r requirements.txt || true
+          pip install bandit
+          bandit -r . -f json -o bandit-report.json --exclude '*test_*.py' || true
+          high_count="$(jq '[.results[]? | select(.issue_severity == "HIGH")] | length' bandit-report.json)"
+          total_count="$(jq '.results | length // 0' bandit-report.json)"
+          if [ "$total_count" -gt 10 ] || [ "$high_count" -gt 0 ]; then
+            jq '.results[]? | {severity: .issue_severity, test: .test_id, file: .filename, line: .line_number, msg: .issue_text}' bandit-report.json
+            exit 1
+          fi
+
+      - name: Set up Node.js
+        if: hashFiles('package.json') != ''
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: pnpm
+
+      - name: Node lint
+        if: hashFiles('package.json') != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          if [ -f pnpm-lock.yaml ]; then
+            pnpm install --frozen-lockfile || pnpm install
+            pnpm exec eslint "**/*.{js,ts,vue,jsx,tsx}" --format stylish
+          elif [ -f yarn.lock ]; then
+            yarn install --frozen-lockfile || yarn install
+            yarn eslint "**/*.{js,ts,vue,jsx,tsx}" --format stylish
+          else
+            npm ci || npm install
+            npx eslint "**/*.{js,ts,vue,jsx,tsx}" --format stylish
+          fi
