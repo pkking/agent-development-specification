@@ -14,6 +14,8 @@ spec:
         app: ai-dev-runner
     spec:
       serviceAccountName: ai-dev-runner
+      nodeSelector:
+        node-role.kubernetes.io/ci: ""
       containers:
         - name: runner
           image: <registry>/ai-dev-runner:latest
@@ -34,6 +36,22 @@ spec:
           envFrom:
             - secretRef:
                 name: ai-dev-runner-secrets
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - pgrep -f 'run.sh' > /dev/null
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - test -f /home/runner/actions-runner/.runner && pgrep -f 'run.sh' > /dev/null
+            initialDelaySeconds: 10
+            periodSeconds: 10
           resources:
             requests:
               cpu: 500m

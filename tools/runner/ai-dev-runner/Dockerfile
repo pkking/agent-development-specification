@@ -51,7 +51,6 @@ RUN mkdir -p /home/runner/actions-runner && cd /home/runner/actions-runner \
        "https://github.com/actions/runner/releases/download/v${GH_RUNNER_VERSION}/actions-runner-linux-${TARGETARCH}-${GH_RUNNER_VERSION}.tar.gz" \
     && tar xzf runner.tar.gz && rm runner.tar.gz
 
-COPY --chown=runner:runner entrypoint.sh start-runner.sh /home/runner/
-RUN sudo chmod +x /home/runner/entrypoint.sh /home/runner/start-runner.sh
+COPY --chown=runner:runner --chmod=755 entrypoint.sh start-runner.sh /home/runner/
 
 ENTRYPOINT ["/home/runner/entrypoint.sh"]

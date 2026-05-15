@@ -1,17 +1,10 @@
 #!/usr/bin/env bash
+# Build + push k8s-deployer image.
+# Usage: REGISTRY=<your-registry>/<team> ./build-and-push.sh
 set -euo pipefail
 
-REGISTRY="${REGISTRY:?}"
-IMAGE_NAME="${IMAGE_NAME:-k8s-deployer}"
-TAG="${TAG:-$(date +%Y%m%d-%H%M%S)}"
-PLATFORMS="${PLATFORMS:-linux/amd64,linux/arm64}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "${SCRIPT_DIR}/../lib/common.sh"
 
-FULL="${REGISTRY}/${IMAGE_NAME}"
-
-if docker buildx version >/dev/null 2>&1; then
-  docker buildx build --platform "${PLATFORMS}" -t "${FULL}:${TAG}" -t "${FULL}:latest" --push .
-else
-  docker build -t "${FULL}:${TAG}" -t "${FULL}:latest" .
-  docker push "${FULL}:${TAG}"
-  docker push "${FULL}:latest"
-fi
+REGISTRY="${REGISTRY:?REGISTRY required, e.g. registry.example.com/team}"
+build_and_push "${REGISTRY}" "${IMAGE_NAME:-k8s-deployer}" "${TAG:-$(date +%Y%m%d-%H%M%S)}" "${PLATFORMS:-linux/amd64,linux/arm64}"

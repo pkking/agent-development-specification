@@ -14,6 +14,8 @@ spec:
         app: k8s-deployer
     spec:
       serviceAccountName: k8s-deployer
+      nodeSelector:
+        node-role.kubernetes.io/ci: ""
       containers:
         - name: runner
           image: <registry>/k8s-deployer:latest
@@ -30,6 +32,22 @@ spec:
             - name: kubeconfig
               mountPath: /home/deployer/.kube
               readOnly: true
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - pgrep -f 'run.sh' > /dev/null
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - test -f /home/deployer/actions-runner/.runner && pgrep -f 'run.sh' > /dev/null
+            initialDelaySeconds: 10
+            periodSeconds: 10
           resources:
             requests:
               cpu: 200m

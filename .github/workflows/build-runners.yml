@@ -1,0 +1,68 @@
+name: Build Runner Images
+
+on:
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: "Which runner image to build"
+        required: true
+        type: choice
+        options:
+          - both
+          - ai-dev-runner
+          - k8s-deployer
+      registry:
+        description: "Container registry prefix (e.g. registry.example.com/team)"
+        required: true
+        type: string
+      tag:
+        description: "Image tag (defaults to YYYYMMDD-HHMMSS)"
+        required: false
+        type: string
+        default: ""
+      platforms:
+        description: "Target platforms (comma-separated)"
+        required: false
+        type: string
+        default: "linux/amd64,linux/arm64"
+
+jobs:
+  build-ai-dev-runner:
+    if: ${{ github.event.inputs.runner == 'ai-dev-runner' || github.event.inputs.runner == 'both' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push ai-dev-runner
+        working-directory: tools/runner/ai-dev-runner
+        env:
+          REGISTRY: ${{ github.event.inputs.registry }}
+          TAG: ${{ github.event.inputs.tag }}
+          PLATFORMS: ${{ github.event.inputs.platforms }}
+        run: |
+          TAG="${TAG:-$(date +%Y%m%d-%H%M%S)}"
+          export TAG
+          bash build-and-push.sh
+
+  build-k8s-deployer:
+    if: ${{ github.event.inputs.runner == 'k8s-deployer' || github.event.inputs.runner == 'both' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push k8s-deployer
+        working-directory: tools/runner/k8s-deployer
+        env:
+          REGISTRY: ${{ github.event.inputs.registry }}
+          TAG: ${{ github.event.inputs.tag }}
+          PLATFORMS: ${{ github.event.inputs.platforms }}
+        run: |
+          TAG="${TAG:-$(date +%Y%m%d-%H%M%S)}"
+          export TAG
+          bash build-and-push.sh
