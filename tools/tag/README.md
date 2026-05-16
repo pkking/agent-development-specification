@@ -14,13 +14,13 @@
 
 `gh release create` / GitHub UI 默认创建 **lightweight tag**（只是个指向 commit 的 ref）。正式发版应该用 **annotated tag**：
 
-| | lightweight | annotated |
-|---|---|---|
-| 自带 message | ❌ | ✓（`git show v1.0.0` 可见） |
-| 自带 tagger / 时间戳 | ❌ | ✓ |
-| 可 GPG 签名 | ❌ | ✓ |
-| `git describe` 优先识别 | 同 | ✓ |
-| SemVer / Maven / pip 习惯 | — | ✓ |
+|                           | lightweight | annotated                   |
+| ------------------------- | ----------- | --------------------------- |
+| 自带 message              | ❌          | ✓（`git show v1.0.0` 可见） |
+| 自带 tagger / 时间戳      | ❌          | ✓                           |
+| 可 GPG 签名               | ❌          | ✓                           |
+| `git describe` 优先识别   | 同          | ✓                           |
+| SemVer / Maven / pip 习惯 | —           | ✓                           |
 
 本工具默认产出 annotated tag。
 
@@ -79,27 +79,27 @@ manifest 结构：
 
 工具会自动注入这些占位符（按 Python str.format 替换 `{name}`）：
 
-| 占位符 | 含义 | 在哪能用 |
-|---|---|---|
-| `{owner}` / `{repo}` / `{branch}` | 当前仓基本信息 | 所有 |
-| `{tag}` / `{date}` | 版本号 / 日期 | 所有 |
-| `{sha}` / `{sha_short}` | 当前仓本次 release 锁的 commit SHA（全 40 / 短 10）| 所有 |
-| `{repo_url}` | `https://github.com/{owner}/{repo}` | 所有 |
-| `{commit_url}` | `https://github.com/{owner}/{repo}/commit/{sha}` | 所有 |
-| `{source_zip_url}` | `https://github.com/{owner}/{repo}/archive/refs/tags/{tag}.zip` | 所有 |
-| `{source_tgz_url}` | 同上 `.tar.gz` | 所有 |
-| `{matrix}` | 跨仓兼容性矩阵 markdown（自动生成）| **仅 umbrella** |
-| `{umbrella_owner}` / `{umbrella_repo}` / `{umbrella_repo_url}` / `{umbrella_tag_url}` | 反向链接到 umbrella | **仅 submodule** |
-| `{...任意自定义键}` | `context: {...}` 里的字段 | 所有 |
+| 占位符                                                                                | 含义                                                            | 在哪能用         |
+| ------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ---------------- |
+| `{owner}` / `{repo}` / `{branch}`                                                     | 当前仓基本信息                                                  | 所有             |
+| `{tag}` / `{date}`                                                                    | 版本号 / 日期                                                   | 所有             |
+| `{sha}` / `{sha_short}`                                                               | 当前仓本次 release 锁的 commit SHA（全 40 / 短 10）             | 所有             |
+| `{repo_url}`                                                                          | `https://github.com/{owner}/{repo}`                             | 所有             |
+| `{commit_url}`                                                                        | `https://github.com/{owner}/{repo}/commit/{sha}`                | 所有             |
+| `{source_zip_url}`                                                                    | `https://github.com/{owner}/{repo}/archive/refs/tags/{tag}.zip` | 所有             |
+| `{source_tgz_url}`                                                                    | 同上 `.tar.gz`                                                  | 所有             |
+| `{matrix}`                                                                            | 跨仓兼容性矩阵 markdown（自动生成）                             | **仅 umbrella**  |
+| `{umbrella_owner}` / `{umbrella_repo}` / `{umbrella_repo_url}` / `{umbrella_tag_url}` | 反向链接到 umbrella                                             | **仅 submodule** |
+| `{...任意自定义键}`                                                                   | `context: {...}` 里的字段                                       | 所有             |
 
 ### 其他模式
 
-| 命令 | 干啥 |
-|---|---|
-| `python release.py --manifest <m> --tag-only` | 只 (重) 打 annotated tag，不动 release |
-| `python release.py --manifest <m> --body-only` | 只 PATCH release body，不动 tag（修文案最省事的方式） |
+| 命令                                                | 干啥                                                                                                 |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `python release.py --manifest <m> --tag-only`       | 只 (重) 打 annotated tag，不动 release                                                               |
+| `python release.py --manifest <m> --body-only`      | 只 PATCH release body，不动 tag（修文案最省事的方式）                                                |
 | `python release.py --manifest <m> --use-tag-target` | 用现有 tag 指向的 commit 作为 SHA（不取 branch HEAD）；用于「重新渲染历史版本的 body / tag-message」 |
-| `python release.py --manifest <m> --dry-run` | 干跑，只打印 actions、不调 API |
+| `python release.py --manifest <m> --dry-run`        | 干跑，只打印 actions、不调 API                                                                       |
 
 ### 单仓极简模式（不走 manifest）
 
@@ -129,27 +129,27 @@ PAT 需要 scope：
 
 参考 Kubernetes / etcd / TiDB 等大型项目，模板里我们用的这套：
 
-| 段 | umbrella | submodule |
-|---|---|---|
-| 标题 + 元信息表（仓 / 分支 / commit / zip） | ✓ | ✓ |
-| 基线说明 | ✓ | ✓（指回 umbrella） |
-| 本仓本次包含 | ✓ | ✓ |
-| 跨仓兼容性矩阵 | ✓ | — |
-| 关联组件 / 全局视图 | ✓ | — |
-| 已知限制 | ✓ | ✓ |
-| 文档 / 资源链接 | ✓ | —（指回 umbrella） |
-| 版本元信息表 | ✓ | ✓ |
+| 段                                          | umbrella | submodule          |
+| ------------------------------------------- | -------- | ------------------ |
+| 标题 + 元信息表（仓 / 分支 / commit / zip） | ✓        | ✓                  |
+| 基线说明                                    | ✓        | ✓（指回 umbrella） |
+| 本仓本次包含                                | ✓        | ✓                  |
+| 跨仓兼容性矩阵                              | ✓        | —                  |
+| 关联组件 / 全局视图                         | ✓        | —                  |
+| 已知限制                                    | ✓        | ✓                  |
+| 文档 / 资源链接                             | ✓        | —（指回 umbrella） |
+| 版本元信息表                                | ✓        | ✓                  |
 
 模板：[`examples/umbrella-body.template.md`](examples/umbrella-body.template.md) + [`examples/submodule-body.template.md`](examples/submodule-body.template.md) + 对应 tag-message 模板。
 
 ## 失败处理
 
-| HTTP | 原因 | 处理 |
-|---|---|---|
-| 401 / 403 | PAT 没权限 | 检查 scope；fine-grained PAT 加 `contents: write` |
-| 404 PATCH refs | tag 还不存在（不应该到 PATCH 分支） | 升级到最新 release.py |
-| 422 release already_exists | release 重复创建 | 工具默认 PATCH 更新；如果想严格不覆盖，用 `--tag-only` |
-| 网络断 | 重跑工具（幂等） | — |
+| HTTP                       | 原因                                | 处理                                                   |
+| -------------------------- | ----------------------------------- | ------------------------------------------------------ |
+| 401 / 403                  | PAT 没权限                          | 检查 scope；fine-grained PAT 加 `contents: write`      |
+| 404 PATCH refs             | tag 还不存在（不应该到 PATCH 分支） | 升级到最新 release.py                                  |
+| 422 release already_exists | release 重复创建                    | 工具默认 PATCH 更新；如果想严格不覆盖，用 `--tag-only` |
+| 网络断                     | 重跑工具（幂等）                    | —                                                      |
 
 ## 与流水线的关系
 

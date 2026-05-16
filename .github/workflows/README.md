@@ -6,13 +6,24 @@ This directory contains reusable GitHub Actions workflows that can be called fro
 
 ### 1. go-reusable.yml
 
-Go build and test coverage workflow.
+Go build and test coverage workflow with incremental coverage analysis.
+
+**Note:** This workflow fetches full git history (`fetch-depth: 0`) by default to support incremental coverage analysis. Checkout time may be slightly longer (10-30 seconds for typical projects) but is necessary for accurate diff-based coverage calculation.
 
 **Inputs:**
 
 - `runs-on` (required): Runner to use (default: `ubuntu-latest`)
 - `go-version` (optional): Go version (default: `1.22`)
 - `test-packages` (optional): Packages to test (default: `./...`)
+
+**Coverage Thresholds:**
+
+Coverage thresholds are defined at the organization level and are **not configurable** per project:
+
+- Full coverage threshold: **10%** (minimum overall coverage)
+- Incremental coverage threshold: **80%** (minimum coverage for changed code)
+
+These values are enforced consistently across all projects using this workflow. If you need different thresholds for specific projects, please discuss with the team first.
 
 **Secrets:**
 
