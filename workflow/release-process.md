@@ -42,5 +42,6 @@ release notes 自动生成（teams/prompts/release-notes.md）
 ## 4. 关联
 
 - 流程 3：[`stage-flow/flow-3-release.md`](stage-flow/flow-3-release.md)
+- **生产发布治理（release-mgmt：变更计划 + 同意发布门禁）**：[`change-release-process.md`](change-release-process.md)
 - 团队发布规范：[`../teams/standards/release.md`](../teams/standards/release.md)
 - 部署器：[`generic-layer/deployer.md`](generic-layer/deployer.md)

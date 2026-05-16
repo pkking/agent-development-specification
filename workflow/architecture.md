@@ -495,9 +495,31 @@ python3 src/deployer/deploy.py \
 
 **完成判据**：所有 PR 已 merge + 各仓 beta 已 rollout + 预览资源全部清理 + issue 收到结果回评。
 
-**下一步**：beta 验证 → 生产发布（由项目独立的发布流程负责，不在本流水线范围）。
+**下一步**：beta 验证 → **生产发布走 release-mgmt 变更发布治理**（见 6.5）。
 
 **详细**：[`stage-flow/flow-3-release.md`](stage-flow/flow-3-release.md) + [`release-process.md`](release-process.md)
+
+---
+
+## 6.5 流程 3 之后：变更发布治理（release-mgmt）
+
+beta 验证通过后，生产发布**收敛到 `release-mgmt` 仓的 Issue 驱动治理闭环**，不再由 release manager 手动拍板：
+
+```
+release-mgmt 提「发布/变更/版本」类 Issue（服务名任意）
+   ▼ workflow_change（self-hosted, ai-dev-runner，非 GitHub 托管）
+ 按 ai-release-plan Skill 跑 AI → 生成《变更计划说明书》→ 提 PR（resolve #N）→ 回评
+   ▼ 人评审并合入变更计划 PR（merge 永远是人的事）
+   ▼ 固定角色（vars.RELEASE_APPROVERS）评论 `同意发布` / `同意发布 正式`
+   ▼ release（self-hosted, ai-dev-runner，多检查项 fail-fast）
+ 鉴权 → 变更计划存在性硬门禁 → 6 项检查 → 构建部署测试 → 3 项生产准入 → 部署生产
+ （任一检查项失败立即停止后续并回评 Issue）
+```
+
+两条 workflow 都用自托管 `ai-dev-runner`（复用发布 runner）；变更计划未合入 main 即硬门禁拦停。
+
+**详细**：[`change-release-process.md`](change-release-process.md)
+**模板 / Skill / 经验**：[`../spec/teams/templates/Release/#1 Release Specification.md`](../spec/teams/templates/Release/%231%20Release%20Specification.md) · [`../spec/teams/prompts/ai-release-plan.md`](../spec/teams/prompts/ai-release-plan.md) · [`../spec/teams/context/experience/变更计划编写经验.md`](../spec/teams/context/experience/%E5%8F%98%E6%9B%B4%E8%AE%A1%E5%88%92%E7%BC%96%E5%86%99%E7%BB%8F%E9%AA%8C.md)
 
 ---
 
