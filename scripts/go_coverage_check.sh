@@ -33,7 +33,7 @@ run_coverage_test() {
     log_info "Running tests with coverage on: $TEST_PACKAGES"
     
     # Set GOPROXY (respects existing environment)
-    export GOPROXY=${GOPROXY:-https://goproxy.cn,direct}
+    export GOPROXY=${GOPROXY:-https://proxy.golang.org,direct}
     
     # Run tests with proper error handling
     if ! go test -v -coverprofile="$COVERAGE_FILE" $GO_TEST_FLAGS "$TEST_PACKAGES"; then
