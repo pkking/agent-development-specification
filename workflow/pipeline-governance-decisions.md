@@ -83,6 +83,36 @@ om-datacenter 保留 issue-1/2/3 为唯一编排实现；backlog 只保留 servi
 | D7 | opencode.yml 通用 bot | **保留为 break-glass 应急通道**，文档标注与主线体系独立、用独立 secret | 废弃 | 应急通道有价值，但要写清边界 |
 | D8 | 坏件修复优先级 | **P0 立即修**：datastat label-check.yml 错放、om-deployment yaml-validation 缩进 bug | 排期 | 名存实亡的门禁=安全隐患，优先 |
 
+## 4.5 凭据 / 镜像 / 环境隔离 决策项（D9–D17，**新增，与 D1–D8 平行待拍板**）
+
+> 背景：变更发布已真实跑通（演练态）。要上正式必须先定清「秘钥放哪、怎么变、镜像放哪、
+> test/beta/prod 怎么隔离、beta 改完怎么保证 prod 升级不出事」。下列每条给推荐+备选+取舍，
+> 末尾「D17」是**我替你补的、你没列但必须一起定**的点。
+
+| 编号 | 决策点 | 推荐 | 备选 | 取舍 / 风险 |
+|------|--------|------|------|------------|
+| **D9** | **秘钥存哪** | **分层**：CI 触发类（RELEASE_MGMT_TOKEN/OPENCODE_API_KEY/SOURCE_REPO_TOKEN）→ GitHub repo Secret；运行时业务凭据（DB/Redis/第三方）→ 每环境独立 **External-Secrets Operator(ESO) + 后端 KMS/Vault** 注入 K8s Secret | 全 Vault sidecar / 全 K8s Secret 手工 / 全 GitHub Secret | 现状是 GitHub+K8s+少量 Vault 三处混存（om-datacenter 历史）→ 散乱。统一 ESO 一处真相、自动轮换；迁移有成本 |
+| **D10** | **秘钥跨环境一致还是不一致** | **同名异值**：secret 的 **KEY/名一致**（manifest、workflow、配置可跨环境移植），**VALUE 每环境独立**（test/beta/prod 各自 DB/API 凭据物理隔离，互不可达） | 完全同值（省事但 prod 凭据等于裸奔）/ 完全独立命名（配置无法移植，每环境改 manifest） | 这是关键原则：**名一致保证"测过的配置=上线的配置"，值隔离保证爆炸半径**。不一致命名会让发布流水线没法通用 |
+| **D11** | **beta 改完怎么保证 prod 自动升级不出事**（你的核心担忧） | promote 前加 **「秘钥形态对账门禁」**：比对 beta 与 prod 的 secret **KEY 集合 + 配置项 schema 是否齐**（**只比键/形态，绝不比值**），prod 缺键即 **fail-fast 拦停** 并提示「先在 prod 配齐 X 再 promote」 | 人工 checklist / 不校验（出事再说） | 根因：beta 新增了一个 secret/配置项、prod 没有 → prod 滚动升级即 CrashLoop。形态对账把"漏配"在发布前挡住；值不一致是设计预期（见 D10）不报错 |
+| **D12** | **秘钥变更 / 轮换流程** | prod secret 变更：**双人审批 + 审计留痕 + 先在 beta 验证同形态变更 + ESO 自动 rollout + 旧值保留回滚窗口**；定期轮换；泄露应急 SOP（rotate → 按 D10 只影响该环境） | 谁有权谁改（无门禁）/ 永不轮换 | 不定轮换 SOP，泄露时不知道波及哪些环境；prod 直改无双人=高危单点 |
+| **D13** | **镜像仓库放哪 + 隔离** | **test=集群内 registry**（image.mode=local，免云凭据，现状）；**beta/prod=华为云 SWR 但强隔离**：prod **独立账号/独立 project/独立拉取凭据**，beta 独立 project（与 test/prod 都不共享） | beta 复用 test 集群内 registry（持久性差）/ test、beta、prod 同一 SWR project（不隔离） | prod 与 test 共 registry = test 侧失陷可投毒 prod 镜像。账号级隔离最稳，project 级最低要求 |
+| **D14** | **镜像晋级方式** | **构建一次、按 digest 不可变晋级** test→beta→prod（retag/复制 manifest，不各环境重 build） | 每环境各自重新 build | 重 build 会导致"beta 测的二进制 ≠ prod 上线的二进制"，扫描/测试白做。不可变晋级=可追溯、可签名 |
+| **D15** | **test/beta/prod 隔离档位**（你问的"prod/beta 要隔离吧"——对，必须） | **prod = 独立集群 + 独立云账号 + 独立 registry + 独立 secret store**（最高隔离）；**beta = 至少独立 namespace + 独立 secret store，理想独立集群**；test = 现 ai-test 集群 | 三环境同集群不同 ns（最弱）/ test+beta 同集群、prod 独立（折中） | prod 同集群=一次配置错/越权即全毁。**注意现状风险**：test 集群与 ai-dev-runner 同集群，runner 持集群凭据，是横向移动面（见 D17） |
+| **D16** | **GitOps 部署仓与 secret 边界** | **infra-common 只放 image tag + 非敏感配置，绝不放任何 secret 值**；secret 由每环境 ESO/SealedSecret 独立管，部署仓只引用 secret **名** | 部署仓放加密 secret（SealedSecret 入仓）/ 明文（绝不） | 部署仓是多人可读的 GitOps 真相源，放值=泄露面最大。引用名+环境侧注入是业界标准 |
+
+### D17 — 我替你补的、你没列但必须一起定的点
+
+1. **回滚与 secret/schema 漂移**：镜像能回滚，但若期间 DB schema / secret 形态已变，回滚镜像会跑不起来。变更计划的「回滚方案」必须含 **secret/schema 维度的回滚兼容性判断**（是否可纯镜像回滚 / 需连带回滚配置）。
+2. **runner 横向移动风险**：当前 `ai-dev-runner` 与 test 集群同处、持集群凭据。**正式发布的 runner 必须独立、最小权限、不与 dev/test runner 混**，否则 dev 侧失陷可触达发布链路与 test secret。
+3. **配置/秘钥漂移检测**：定期 diff `beta vs prod` 的 secret KEY 集合与配置项并告警，防"beta 加了 prod 没加"静默积累（这是 D11 的常态化版本）。
+4. **镜像来源证明**：prod 镜像应 **cosign 签名 + SBOM**，配合 image-vuln-scan，确保上线的镜像可追溯、未被篡改。
+5. **长期 admin PAT 风险**：现 `SOURCE_REPO_TOKEN` 用的是某人 admin PAT clone 私有源码仓——**应换成 fine-grained 只读 / deploy key / 短时 token**，避免长期高权限凭据进 CI。
+6. **审计**：所有 prod secret 读写 + 发布触发（谁、何时、改了什么）必须可审计留痕。
+7. **多区域/容灾**（若 prod 跨区）：secret 与 registry 的跨区复制一致性策略。
+
+> 这些都未拍板。建议与 D1–D8 一起过；D9–D16 是上正式的**前置硬约束**（不定清不能上 prod），
+> D17 各条按风险排期。本节不改 D1–D8 / §5 / §6。
+
 ## 5. 拍板后落地顺序（建议）
 
 1. D8 坏件（P0，1 天）→ 2. D2 发布三合一（删 datastat 专用，datastat 走 release-config）→
