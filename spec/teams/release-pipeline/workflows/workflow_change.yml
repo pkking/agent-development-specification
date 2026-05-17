@@ -1,0 +1,143 @@
+name: 变更计划自动生成 (workflow_change)
+
+# 触发：在 release-mgmt 仓创建「发布/变更/版本」类 Issue 即自动生成变更计划说明书并提 PR。
+#   例："发布 APIMagic 服务 v1.0.0 到今天的变更发布" / "发布APIMagic服务到今天为止的变更"
+#   服务名任意。生成逻辑遵循 .claude/commands/ai-release-plan.md（本仓 Skill）。
+#
+# 稳定性设计：除「opencode 生成变更计划」这一步是 AI（不可固定），其余全部
+#   确定性步骤已脚本化到 scripts/*.py（解析/校验/敏感扫描/git/PR/回评），
+#   降低对 AI 输出格式的依赖、可单测可复用。
+#
+# Runner：自托管 [self-hosted, ai-dev-runner]（复用发布 runner），不用 GitHub 托管。
+
+on:
+  issues:
+    types: [opened]
+  issue_comment:
+    types: [created]
+
+concurrency:
+  group: change-plan-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  gen-change-plan:
+    if: >
+      github.event.issue.pull_request == null &&
+      github.event.issue.state == 'open' &&
+      (
+        (github.event_name == 'issues' &&
+          (contains(github.event.issue.title, '发布') ||
+           contains(github.event.issue.title, '变更') ||
+           contains(github.event.issue.title, '版本'))) ||
+        (github.event_name == 'issue_comment' &&
+          startsWith(github.event.comment.body, '[重新生成变更计划]'))
+      )
+    runs-on: [self-hosted, ai-dev-runner]
+    timeout-minutes: 25
+    env:
+      HOME: /home/runner
+      PYTHONPATH: ${{ github.workspace }}/scripts
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+      ISSUE_TITLE: ${{ github.event.issue.title }}
+      REPO_FULL: ${{ github.repository }}
+      OPENCODE_MODEL: ${{ vars.OPENCODE_MODEL || 'alibaba-cn/glm-5' }}
+      CHANGE_BRANCH: change-plan/issue-${{ github.event.issue.number }}
+      GH_TOKEN: ${{ secrets.RELEASE_MGMT_TOKEN || secrets.CROSS_REPO_TOKEN || github.token }}
+
+    steps:
+      - name: Checkout release-mgmt
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_MGMT_TOKEN || secrets.CROSS_REPO_TOKEN || github.token }}
+
+      - name: Setup opencode 环境
+        shell: bash
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        run: |
+          set -e
+          mkdir -p "$HOME/.local/share/opencode/log" "$HOME/.config/opencode" /tmp/opencode
+          printf '{"alibaba-cn":{"type":"api","key":"%s"}}\n' "$OPENCODE_API_KEY" > "$HOME/.local/share/opencode/auth.json"
+          chmod 600 "$HOME/.local/share/opencode/auth.json"
+          printf '{"$schema":"https://opencode.ai/config.json"}\n' > "$HOME/.config/opencode/opencode.json"
+
+      - name: 解析 Issue（脚本：拉取+解析服务/版本/repo@tag）
+        id: parse
+        shell: bash
+        run: python3 scripts/parse_issue.py
+
+      - name: 从源码仓 tag 自动推算发布版本（权威，覆盖 issue 写的版本）
+        id: ver
+        shell: bash
+        env:
+          SERVICE: ${{ steps.parse.outputs.service }}
+          SOURCE_REPO_TOKEN: ${{ secrets.SOURCE_REPO_TOKEN }}
+        run: |
+          set -e
+          python3 -m pip install --quiet pyyaml 2>/dev/null || pip install --quiet pyyaml || true
+          CFG="release-config/${SERVICE}.yaml"
+          if [ ! -f "$CFG" ]; then
+            echo "::notice::无 $CFG，跳过版本推算（变更计划按 issue 描述）"; exit 0
+          fi
+          CONFIG_JSON="$(python3 -c "import json,yaml;print(json.dumps(yaml.safe_load(open('$CFG',encoding='utf-8'))))")"
+          export CONFIG_JSON
+          python3 scripts/resolve_version.py
+
+      - name: opencode 生成变更计划说明书（唯一 AI 步骤，遵循 ai-release-plan Skill）
+        shell: bash
+        run: |
+          set -e
+          SKILL="$(cat "$GITHUB_WORKSPACE/.claude/commands/ai-release-plan.md")"
+          ISSUE_CONTENT="$(cat /tmp/opencode/issue.txt 2>/dev/null || echo '')"
+          PROMPT="你是版本发布变更计划编写助手。严格按下面这份 Skill 规范执行：
+
+          ================ Skill: ai-release-plan ================
+          ${SKILL}
+
+          ================ 本次任务 ================
+          当前工作目录就是 release-mgmt 仓 checkout。release-mgmt Issue 编号 = ${ISSUE_NUMBER}。
+          服务名=${{ steps.parse.outputs.service }}。
+          **发布版本号以此为准（权威，从源码仓现有 tag 自动推算，务必用这个，不要用 Issue 里写的版本）**：
+            base_tag（源码仓当前最新）=${{ steps.ver.outputs.base_tag }}
+            next_version（本次发布）=${{ steps.ver.outputs.next_version }}
+          若上面 next_version 为空才回退按 Issue 描述推断；拿不准的字段用 [TODO]，不要编造。
+          变更计划标题/版本号一律用 next_version。
+
+          必须产出：issue_docs/${ISSUE_NUMBER}/Release/#${ISSUE_NUMBER} <变更名称> Change Plan Specification.md
+          严格基于 templates/Release/#1 xx Change Plan Specification.md 结构，保留所有 > 引导提示与勾选项。
+
+          约束：
+          1. 只在 issue_docs/${ISSUE_NUMBER}/ 下新建/修改文件，绝不改 templates/ context/ AGENTS.md .claude/ scripts/ 等。
+          2. 不要执行任何 git 操作（提交/PR 由后续脚本步骤完成）。
+          3. 不写任何密钥/token/AK-SK/内网地址等敏感信息。
+
+          Issue 内容：
+          ${ISSUE_CONTENT}
+          "
+          cd "$GITHUB_WORKSPACE"
+          opencode run "$PROMPT" --model "$OPENCODE_MODEL" --agent build --dangerously-skip-permissions --thinking=false || true
+
+      - name: 校验产物 + 敏感扫描（脚本，硬门禁）
+        shell: bash
+        run: python3 scripts/verify_change_plan.py
+
+      - name: 提交分支 + 开 PR（脚本）
+        shell: bash
+        run: python3 scripts/submit_change_plan.py
+
+      - name: 回评 Issue（脚本）
+        if: env.PR_URL != ''
+        shell: bash
+        run: python3 scripts/comment_issue.py success
+
+      - name: 兜底回评（异常时给信号）
+        if: failure()
+        shell: bash
+        run: python3 scripts/comment_issue.py fail || true

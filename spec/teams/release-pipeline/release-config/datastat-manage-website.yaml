@@ -1,0 +1,39 @@
+# 服务发布配置 —— datastat-manage-website（前端管理后台，Vue 3 + Vite）
+# 由 om-datacenter 原 release-datastat-manage-website.yml 迁移并通用化。
+# 通用发布流水线（.github/workflows/release.yml）按本文件驱动。
+# 字段说明见 docs/onboarding-new-service.md。
+
+service: datastat-manage-website
+source_repo: opensourceways/datastat-manage-website
+default_branch: beta          # datastat 上线分支是 beta，不是 main
+dockerfile: ./Dockerfile
+build_context: .
+build_args:
+  ENV_FLAG: test               # 多阶段 Dockerfile 接 ENV_FLAG=test/beta/prod
+
+image:
+  mode: local                  # 先本地 k8s 测试；正式上云改 swr 并补 SWR_* secret
+  local_registry: registry.ai-test.svc.cluster.local:5000/datastat-manage-website
+  test_repo: ""                # mode=swr：swr.ap-southeast-1.myhuaweicloud.com/infra-hk/datastat-manage-website-test
+  prod_repo: ""                # mode=swr：opensourceways-w5peto.swr-pro.myhuaweicloud.com/opensourceway/datastat-manage-website
+
+deploy:
+  mode: none                   # 先 none；正式走 kustomize 改 infra-common
+  config_repo: opensourceways/infra-common
+  config_branch: main
+  test_path: ""                # 例 common-applications/test-environment/datastat/web
+  prod_path: ""                # 例 common-applications/control/datastat/web
+  value_file: value.yaml
+  image_tag_path: .image.tag
+
+health:
+  url: ""
+
+checks:
+  sast: true
+  vuln: true
+  license: true
+  ut: false                    # 前端无 test script 时跳过；有则置 true
+  image_scan: true
+  virus_scan: false
+  branch_check: true

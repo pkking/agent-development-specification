@@ -1,0 +1,259 @@
+name: 🚀 通用发布流水线 (release)
+
+# 一条「通用」发布流水线 —— 由 release-config/<service>.yaml 配置驱动。
+# 新增服务只需在 release-config/ 加一份 <service>.yaml（见 docs/onboarding-new-service.md）。
+# 由 om-datacenter 原 release-datastat-manage-website.yml 迁移并通用化。
+#
+# 触发：在「发布/变更/版本」类 Issue 下，**固定角色**评论 `同意发布` 触发。
+#   `同意发布`      → 演练（dry_run，不真构建/不真改部署仓）
+#   `同意发布 正式`  → 正式发布（真实构建/部署）
+# 角色白名单：vars.RELEASE_APPROVERS。
+#
+# 多检查项串行，任一失败 fail-fast 停止后续。硬门禁：变更计划说明书必须已在 main。
+# 所有阶段调 scripts/*.py 真实实现（构建走 containerd / SWR，按 image.mode；
+# 部署走 kustomize/helm-value，按 deploy.mode）。
+#
+# Runner：自托管 [self-hosted, ai-dev-runner]（复用发布 runner）。
+#   注意：image.mode=local 需 runner 具备 containerd 构建链（nerdctl 或 buildah+ctr
+#   + 挂载 /run/containerd/containerd.sock），否则构建步骤会报错并指明运维补什么。
+
+on:
+  issue_comment:
+    types: [created]
+
+concurrency:
+  group: release-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+
+env:
+  PYTHONPATH: ${{ github.workspace }}/scripts
+  ISSUE_NUMBER: ${{ github.event.issue.number }}
+  ISSUE_TITLE: ${{ github.event.issue.title }}
+  REPO_FULL: ${{ github.repository }}
+  GH_TOKEN: ${{ secrets.RELEASE_MGMT_TOKEN || secrets.CROSS_REPO_TOKEN || github.token }}
+
+jobs:
+  authorize:
+    if: >
+      github.event.issue.pull_request == null &&
+      github.event.issue.state == 'open' &&
+      startsWith(github.event.comment.body, '同意发布')
+    runs-on: [self-hosted, ai-dev-runner]
+    timeout-minutes: 5
+    outputs:
+      dry_run: ${{ steps.parse.outputs.dry_run }}
+      service: ${{ steps.parse.outputs.service }}
+    steps:
+      - name: 校验评论人在固定角色白名单
+        shell: bash
+        env:
+          APPROVERS: ${{ vars.RELEASE_APPROVERS }}
+          ACTOR: ${{ github.event.comment.user.login }}
+        run: |
+          set -e
+          if [ -z "$APPROVERS" ]; then
+            echo "::error::未配置 vars.RELEASE_APPROVERS，拒绝发布"
+            gh issue comment "$ISSUE_NUMBER" --repo "$REPO_FULL" --body "❌ 未配置发布审批白名单 \`RELEASE_APPROVERS\`，发布已停止。" || true
+            exit 1
+          fi
+          if ! printf '%s' ",${APPROVERS}," | tr -d ' ' | grep -q ",${ACTOR},"; then
+            echo "::error::@${ACTOR} 不在白名单"
+            gh issue comment "$ISSUE_NUMBER" --repo "$REPO_FULL" --body "❌ @${ACTOR} 不在发布审批角色白名单，发布已停止。" || true
+            exit 1
+          fi
+          echo "✓ @${ACTOR} 鉴权通过"
+
+      - name: 解析 dry_run / 服务名
+        id: parse
+        shell: bash
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          set -e
+          if printf '%s' "$COMMENT_BODY" | grep -qE '正式|--prod|prod'; then
+            echo "dry_run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "dry_run=true" >> "$GITHUB_OUTPUT"
+          fi
+          SVC="$(printf '%s' "$ISSUE_TITLE" | sed -nE 's/.*发布[ 　]*([A-Za-z0-9_.-]+).*/\1/p')"
+          [ -z "$SVC" ] && SVC="$(printf '%s' "$ISSUE_TITLE" | sed -nE 's/^([A-Za-z0-9_.-]+)[ 　].*/\1/p')"
+          [ -z "$SVC" ] && SVC="unknown-service"
+          echo "service=$SVC" >> "$GITHUB_OUTPUT"
+
+  resolve:
+    needs: authorize
+    runs-on: [self-hosted, ai-dev-runner]
+    timeout-minutes: 6
+    outputs:
+      config: ${{ steps.cfg.outputs.config }}
+      checks_matrix: ${{ steps.cfg.outputs.checks_matrix }}
+      gates_matrix: ${{ steps.cfg.outputs.gates_matrix }}
+      image_mode: ${{ steps.cfg.outputs.image_mode }}
+      deploy_mode: ${{ steps.cfg.outputs.deploy_mode }}
+      image_tag: ${{ steps.tag.outputs.image_tag }}
+      next_version: ${{ steps.ver.outputs.next_version }}
+      base_tag: ${{ steps.ver.outputs.base_tag }}
+    env:
+      SERVICE: ${{ needs.authorize.outputs.service }}
+      SOURCE_REPO_TOKEN: ${{ secrets.SOURCE_REPO_TOKEN }}
+    steps:
+      - name: Checkout release-mgmt (main)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+          token: ${{ secrets.RELEASE_MGMT_TOKEN || secrets.CROSS_REPO_TOKEN || github.token }}
+
+      - name: 变更计划存在性硬门禁（缺失即停）
+        shell: bash
+        run: |
+          set -e
+          DOC_DIR="issue_docs/${ISSUE_NUMBER}/Release"
+          if ! ls "$DOC_DIR"/*.md >/dev/null 2>&1; then
+            echo "::error::变更计划不存在（$DOC_DIR/*.md）。需先合入变更计划 PR。"
+            gh issue comment "$ISSUE_NUMBER" --repo "$REPO_FULL" --body "❌ 发布已停止：未找到变更计划说明书 \`${DOC_DIR}/\`。请先合入变更计划 PR 再评论 \`同意发布\`。" || true
+            exit 1
+          fi
+          echo "✓ 变更计划存在：$(ls "$DOC_DIR"/*.md)"
+
+      - name: 加载服务配置（脚本，配置驱动）
+        id: cfg
+        shell: bash
+        run: |
+          set -e
+          python3 -m pip install --quiet pyyaml 2>/dev/null || pip install --quiet pyyaml || true
+          python3 scripts/svc_config.py
+
+      - name: 从源码仓 tag 自动推算发布版本（v1.0.0 → v1.0.1，不采信 issue 写的版本）
+        id: ver
+        shell: bash
+        env:
+          CONFIG_JSON: ${{ steps.cfg.outputs.config }}
+        run: python3 scripts/resolve_version.py
+
+      - name: 计算镜像 tag（= 推算版本 + 构建短 sha，保证可追溯且唯一）
+        id: tag
+        shell: bash
+        run: echo "image_tag=${{ steps.ver.outputs.next_version }}-$(date -u +%Y%m%d%H%M%S)" >> "$GITHUB_OUTPUT"
+
+  stage_check:
+    needs: [authorize, resolve]
+    runs-on: [self-hosted, ai-dev-runner]
+    timeout-minutes: 25
+    strategy:
+      fail-fast: true
+      matrix:
+        check: ${{ fromJSON(needs.resolve.outputs.checks_matrix) }}
+    env:
+      CONFIG_JSON: ${{ needs.resolve.outputs.config }}
+      DRY_RUN: ${{ needs.authorize.outputs.dry_run }}
+      SOURCE_REPO_TOKEN: ${{ secrets.SOURCE_REPO_TOKEN }}
+    steps:
+      - name: Checkout release-mgmt
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          token: ${{ secrets.RELEASE_MGMT_TOKEN || secrets.CROSS_REPO_TOKEN || github.token }}
+      - name: 检查项 ${{ matrix.check }}（真实）
+        shell: bash
+        run: python3 scripts/run_check.py "${{ matrix.check }}"
+
+  stage_build_deploy_test:
+    needs: [authorize, resolve, stage_check]
+    runs-on: [self-hosted, ai-dev-runner]
+    timeout-minutes: 40
+    outputs:
+      image_ref: ${{ steps.build.outputs.image_ref }}
+    env:
+      DRY_RUN: ${{ needs.authorize.outputs.dry_run }}
+      CONFIG_JSON: ${{ needs.resolve.outputs.config }}
+      IMAGE_TAG: ${{ needs.resolve.outputs.image_tag }}
+      SWR_TEST_REGISTRY_USER: ${{ secrets.SWR_TEST_REGISTRY_USER }}
+      SWR_TEST_REGISTRY_PASSWORD: ${{ secrets.SWR_TEST_REGISTRY_PASSWORD }}
+      INFRA_COMMON_REPO_TOKEN: ${{ secrets.INFRA_COMMON_REPO_TOKEN }}
+      RELEASE_MGMT_TOKEN: ${{ secrets.RELEASE_MGMT_TOKEN }}
+      SOURCE_REPO_TOKEN: ${{ secrets.SOURCE_REPO_TOKEN }}
+    steps:
+      - name: Checkout release-mgmt (取 scripts)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          token: ${{ secrets.RELEASE_MGMT_TOKEN || secrets.CROSS_REPO_TOKEN || github.token }}
+      - name: 构建镜像（真实，按 image.mode）
+        id: build
+        shell: bash
+        run: python3 scripts/build_image.py
+      - name: 部署测试环境（真实，按 deploy.mode）
+        shell: bash
+        env:
+          IMAGE_REF: ${{ steps.build.outputs.image_ref }}
+        run: python3 scripts/deploy_release.py test
+
+  stage_prod_gate:
+    needs: [authorize, resolve, stage_build_deploy_test]
+    runs-on: [self-hosted, ai-dev-runner]
+    timeout-minutes: 20
+    strategy:
+      fail-fast: true
+      matrix:
+        gate: ${{ fromJSON(needs.resolve.outputs.gates_matrix) }}
+    env:
+      DRY_RUN: ${{ needs.authorize.outputs.dry_run }}
+      CONFIG_JSON: ${{ needs.resolve.outputs.config }}
+      IMAGE_REF: ${{ needs.stage_build_deploy_test.outputs.image_ref }}
+    steps:
+      - name: Checkout release-mgmt (取 scripts)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          token: ${{ secrets.RELEASE_MGMT_TOKEN || secrets.CROSS_REPO_TOKEN || github.token }}
+      - name: 生产准入 ${{ matrix.gate }}（真实）
+        shell: bash
+        run: python3 scripts/prod_gate.py "${{ matrix.gate }}"
+
+  stage_deploy_prod:
+    needs: [authorize, resolve, stage_build_deploy_test, stage_prod_gate]
+    runs-on: [self-hosted, ai-dev-runner]
+    timeout-minutes: 30
+    env:
+      DRY_RUN: ${{ needs.authorize.outputs.dry_run }}
+      CONFIG_JSON: ${{ needs.resolve.outputs.config }}
+      IMAGE_TAG: ${{ needs.resolve.outputs.image_tag }}
+      IMAGE_REF: ${{ needs.stage_build_deploy_test.outputs.image_ref }}
+      SERVICE: ${{ needs.authorize.outputs.service }}
+      INFRA_COMMON_REPO_TOKEN: ${{ secrets.INFRA_COMMON_REPO_TOKEN }}
+      RELEASE_MGMT_TOKEN: ${{ secrets.RELEASE_MGMT_TOKEN }}
+    steps:
+      - name: Checkout release-mgmt (取 scripts)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          token: ${{ secrets.RELEASE_MGMT_TOKEN || secrets.CROSS_REPO_TOKEN || github.token }}
+      - name: 部署生产（真实，按 deploy.mode）
+        shell: bash
+        run: python3 scripts/deploy_release.py prod
+      - name: 回评 Issue（发布结果，脚本）
+        if: always()
+        shell: bash
+        env:
+          MODE_TEXT: ${{ needs.authorize.outputs.dry_run == 'false' && '正式发布' || '演练(dry_run)' }}
+        run: python3 scripts/comment_issue.py release_done || true
+
+  on_failure:
+    needs: [authorize, resolve, stage_check, stage_build_deploy_test, stage_prod_gate, stage_deploy_prod]
+    if: failure()
+    runs-on: [self-hosted, ai-dev-runner]
+    timeout-minutes: 5
+    steps:
+      - name: Checkout release-mgmt (取 scripts)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          token: ${{ secrets.RELEASE_MGMT_TOKEN || secrets.CROSS_REPO_TOKEN || github.token }}
+      - name: 回评：某检查项失败，发布已停止
+        shell: bash
+        run: python3 scripts/comment_issue.py release_stop || true

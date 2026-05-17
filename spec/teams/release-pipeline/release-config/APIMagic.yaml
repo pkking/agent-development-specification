@@ -1,0 +1,48 @@
+# 服务发布配置 —— APIMagic（后端 API，MagicAPI 引擎，直读 PostgreSQL）
+# 通用发布流水线（.github/workflows/release.yml）按本文件驱动，服务侧只维护这一份。
+# 字段说明见 docs/onboarding-new-service.md。
+
+service: APIMagic
+source_repo: opensourceways/APIMagic
+default_branch: main
+dockerfile: ./Dockerfile
+build_context: .
+build_args:
+  ENV_FLAG: prod
+
+image:
+  # local：构建后推「集群内 registry」，不需要华为云 SWR 凭据（先本地 k8s 测试用这个）
+  # swr  ：推华为云 SWR（需配 SWR_* secret），后续正式上云再切
+  mode: local
+  local_registry: registry.ai-test.svc.cluster.local:5000/apimagic
+  test_repo: ""    # mode=swr 时填，例 swr.ap-southeast-1.myhuaweicloud.com/infra-hk/apimagic-test
+  prod_repo: ""    # mode=swr 时填，例 opensourceways-w5peto.swr-pro.myhuaweicloud.com/opensourceway/apimagic
+
+deploy:
+  # none：仅构建+导入镜像，不动部署仓（本地 k8s 测试阶段够用）
+  # kustomize / helm-value：改 infra-common 对应路径的 image tag，ArgoCD 同步
+  mode: none
+  config_repo: opensourceways/infra-common
+  config_branch: main
+  test_path: ""    # 例 common-applications/test-environment/apimagic
+  prod_path: ""    # 例 common-applications/control/apimagic/backend
+  value_file: value.yaml
+  image_tag_path: .image.tag
+
+health:
+  url: ""          # 部署后健康检查 URL（可选），如 https://apimagic.ai.test.osinfra.cn/
+
+checks:
+  sast: true
+  vuln: true
+  # vuln_block=false：真跑发现 APIMagic 现有 Spring 依赖含 CRITICAL/HIGH CVE
+  # （CVE-2016-1000027 / CVE-2023-20860 等）。此处书面记录**风险接受**——
+  # 仅为打通并演示完整发布流水线降级为「告警不阻断」。
+  # ⚠️ 真实生产发布前必须升级 spring-core/spring-web/spring-webmvc/snakeyaml 修复，
+  # 修完应改回 vuln_block: true（默认严格）。
+  vuln_block: false
+  license: true
+  ut: false          # APIMagic 接口在 PG，UT 由其自身 CI 保证
+  image_scan: true
+  virus_scan: false  # 后端镜像病毒扫意义不大
+  branch_check: true

@@ -1,0 +1,83 @@
+# release-mgmt 专用 self-hosted runner
+# —— 仿 om-datacenter/deploy/runners/ai-dev-runner.yaml，标签同为 self-hosted,ai-dev-runner
+#    （workflow 里 runs-on 不用改；不同仓各自一个 runner，registration 指向 release-mgmt）
+#
+# 为何单独一个：GitHub「仓库级」self-hosted runner 只服务单仓。已有的 ai-dev-runner
+# 注册在 opensourceways/om-datacenter，不会接 release-mgmt 的 job。两条路二选一：
+#   (推荐) 本文件：给 release-mgmt 起一个独立 runner（同 label，零改 workflow）
+#   (可选) 把 ai-dev-runner 升级成「组织级」runner（需 org admin，影响现有 runner，谨慎）
+#
+# 复用 ai-test 里已有的 runner-bootstrap ConfigMap + 镜像，仅换 RUNNER_NAME / GITHUB_URL。
+# 前置（运维一次性，需集群 kubeconfig）：见同目录 README.md。
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: release-mgmt-workspaces
+  namespace: ai-test
+spec:
+  accessModes: ["ReadWriteMany"]
+  storageClassName: sfsturbo-subpath-sc
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: release-mgmt-runner
+  namespace: ai-test
+  labels: { app: release-mgmt-runner, managed-by: ci }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector:
+    matchLabels: { app: release-mgmt-runner }
+  template:
+    metadata:
+      labels: { app: release-mgmt-runner }
+    spec:
+      serviceAccountName: ai-dev-runner            # 复用同 Role（preview-deployer / in-cluster kubeconfig）
+      imagePullSecrets:
+      - name: huawei-swr-image-pull-secret
+      containers:
+      - name: runner
+        image: ghcr.io/opensourceways-test/om-datacenter:latest
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/bash", "/opt/bootstrap/bootstrap.sh"]
+        env:
+        - name: HOME
+          value: /home/runner
+        - name: RUNNER_NAME
+          value: release-mgmt-runner-k8s
+        - name: RUNNER_LABELS
+          value: "self-hosted,ai-dev-runner"       # 同 label：release.yml/workflow_change.yml 不用改
+        - name: RUNNER_GROUP
+          value: "default"
+        - name: DOTNET_SYSTEM_GLOBALIZATION_INVARIANT
+          value: "1"
+        - name: GITHUB_URL
+          valueFrom: { secretKeyRef: { name: release-mgmt-runner-secrets, key: GITHUB_URL } }
+        - name: ACCESS_TOKEN
+          valueFrom: { secretKeyRef: { name: release-mgmt-runner-secrets, key: ACCESS_TOKEN, optional: true } }
+        - name: RUNNER_TOKEN
+          valueFrom: { secretKeyRef: { name: release-mgmt-runner-secrets, key: RUNNER_TOKEN, optional: true } }
+        # ── 本地镜像构建（image.mode=local）需要 containerd ──
+        # 取消下面注释即挂载节点 containerd sock；runner 镜像需含 nerdctl 或 buildah+ctr
+        # volumeMounts 见下方 containerd-sock
+        volumeMounts:
+        - name: bootstrap
+          mountPath: /opt/bootstrap
+        - name: workspaces
+          mountPath: /workspaces
+        # - name: containerd-sock
+        #   mountPath: /run/containerd/containerd.sock
+        resources:
+          requests: { cpu: "500m", memory: 1Gi }
+          limits:   { cpu: "4", memory: 8Gi }
+      volumes:
+      - name: bootstrap
+        configMap: { name: runner-bootstrap, defaultMode: 0755 }
+      - name: workspaces
+        persistentVolumeClaim: { claimName: release-mgmt-workspaces }
+      # - name: containerd-sock
+      #   hostPath: { path: /run/containerd/containerd.sock, type: Socket }

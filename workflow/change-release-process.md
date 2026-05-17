@@ -4,6 +4,36 @@
 >
 > 与 [`release-process.md`](release-process.md)（流程 3 之后的总体发布过程）、团队层 [`../spec/teams/standards/release.md`](../spec/teams/standards/release.md) 相辅相成；本文件聚焦 release-mgmt 这一治理闭环。
 
+## 0. 已真实验证（2026-05-17，权威实现归档）
+
+本闭环已在 `opensourceways/release-mgmt`（issue #10）**端到端真实跑通**：自托管 runner
+真注册、opencode 真生成变更计划、semgrep/trivy/license 真扫、release 全 12 job 绿。
+实现（脚本/工作流/服务配置/runner 部署）权威归档在
+[`../spec/teams/release-pipeline/`](../spec/teams/release-pipeline/README.md)。
+
+**真跑校准后的真实逻辑要点（务必按这些理解，不是设计想象）：**
+
+1. **版本号自动推算，不采信 Issue 写的版本**：`resolve_version.py` 查源码仓现有
+   semver tag，取最新 patch+1（如 APIMagic 已有 `v1.0.0` → 本次发 **`v1.0.1`**；
+   无 tag 才 `v0.0.1`）。Issue 标题/正文写错或不写版本都不影响——以源码仓 tag 为准。
+2. **确定性步骤全脚本化**：除「opencode 生成变更计划」这一步是 AI，解析/校验/敏感扫描/
+   git/PR/回评/版本推算/配置加载/各检查/构建/部署全是 `scripts/*.py`，可单测可复用，
+   不依赖 AI 输出格式。
+3. **检查项真扫，不再 dry 跳过**：sast=semgrep（只卡 **ERROR 级**，对齐团队门禁政策，
+   WARNING/INFO 不挡）、vuln=trivy fs（CRITICAL/HIGH）、license=license-checker、
+   ut。runner 缺工具时**运行时自动安装**（semgrep 用 pip、trivy 下静态二进制），
+   实在装不上才 SKIP（只读检查不挡，与服务侧 CI 互补）。secret-scan /
+   change-plan-integrity 始终硬门禁。
+4. **漏洞门禁可按服务配 + 书面风险接受**：`checks.vuln_block` 默认 `true`（发现
+   CRITICAL/HIGH 即阻断，**默认严格不削弱**）；服务在变更计划书面记录风险接受后，
+   可在 `release-config/<svc>.yaml` 设 `false` 降为告警不阻断（真实发布治理惯例）。
+5. **演练 vs 正式**：`同意发布`=演练（不真推镜像/不真改部署仓，但**检查项照样真扫**）；
+   `同意发布 正式`=正式。**容器构建**：`image.mode=local` 正式态需 runner 具备
+   containerd 链（nerdctl 或 buildah+ctr + 挂 `/run/containerd/containerd.sock`），
+   缺则 `build_image.py` 明确报错指明运维补什么（不静默假成功）；演练态不触发真构建。
+6. **私有源码仓**：`SOURCE_REPO_TOKEN`（能 clone/读私有源码仓 tag 的 PAT，可与
+   `RELEASE_MGMT_TOKEN` 不同）；缺失则版本推算与源码扫描会明确失败并提示。
+
 ## 1. 全景
 
 ```

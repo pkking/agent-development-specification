@@ -518,7 +518,15 @@ release-mgmt 提「发布/变更/版本」类 Issue（服务名任意）
 
 两条 workflow 都用自托管 `ai-dev-runner`（复用发布 runner）；变更计划未合入 main 即硬门禁拦停。
 
+> **已真实端到端跑通（2026-05-17，opensourceways/release-mgmt#10）**，校准后的真实逻辑：
+> - **版本号自动推算**：从源码仓现有 semver tag 取最新 patch+1（APIMagic 有 `v1.0.0` → 发 `v1.0.1`），**不采信 Issue 写的版本**
+> - **确定性步骤全脚本化**（仅变更计划生成是 AI）；检查项**真扫**（semgrep 只卡 ERROR 级 / trivy / license），runner 缺工具运行时自动装
+> - **漏洞门禁可配 + 书面风险接受**：`checks.vuln_block` 默认严格拦 CRITICAL/HIGH，服务记录风险后可降级
+> - 演练态检查照样真扫，仅不真推镜像/不真改部署仓；正式态容器构建需 runner 具 containerd 链
+> - 配置驱动：新增服务只加 `release-config/<svc>.yaml`，零改 workflow
+
 **详细**：[`change-release-process.md`](change-release-process.md)
+**实现权威归档（脚本/工作流/服务配置/runner）**：[`../spec/teams/release-pipeline/`](../spec/teams/release-pipeline/README.md)
 **模板 / Skill / 经验**：[`../spec/teams/templates/Release/#1 Release Specification.md`](../spec/teams/templates/Release/%231%20Release%20Specification.md) · [`../spec/teams/prompts/ai-release-plan.md`](../spec/teams/prompts/ai-release-plan.md) · [`../spec/teams/context/experience/变更计划编写经验.md`](../spec/teams/context/experience/%E5%8F%98%E6%9B%B4%E8%AE%A1%E5%88%92%E7%BC%96%E5%86%99%E7%BB%8F%E9%AA%8C.md)
 
 ---
