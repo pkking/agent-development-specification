@@ -113,6 +113,23 @@ om-datacenter 保留 issue-1/2/3 为唯一编排实现；backlog 只保留 servi
 > 这些都未拍板。建议与 D1–D8 一起过；D9–D16 是上正式的**前置硬约束**（不定清不能上 prod），
 > D17 各条按风险排期。本节不改 D1–D8 / §5 / §6。
 
+## 4.6 已落地（真实验证，供决策参考）
+
+> 通用机制层面已实现并真跑验证的几项（robot 服务专属细节不在此处，见
+> [robot 示例](../specification-example/project/robot/README.md)）：
+
+- **AI-native 模板 + accepted 自动起分析**（通用）：组织通用 issue 模板仓追加带「目标服务」
+  下拉的模板（**不覆盖**业务仓既有模板），配通用 `auto-analyze-on-accept` workflow ——
+  打 `accepted` 后自动进流程 1，**减少 D3 提到的人工触发词依赖**（D3 仍待拍板，这是其
+  渐进落地的一部分，非替代决策）。
+- **多服务接入已验证 2 个**：datacenter（umbrella 多仓）+ robot（单仓），证明通用层
+  「加一个 `services/<id>.yaml` + 一个 tools_repo」即可接新服务，workflow/脚本零改 ——
+  与 D1（编排入口收敛）方向一致。
+- **归档/不可达 dev 仓护栏生效**：dev agent 对归档仓正确判 `mode=none` 拒绝伪造（呼应
+  D17「回滚/不可达」类风险与既有 hard-gate 教训）。
+
+> 本节为进展记录，不改任何 D 决策项，不替代拍板。
+
 ## 5. 拍板后落地顺序（建议）
 
 1. D8 坏件（P0，1 天）→ 2. D2 发布三合一（删 datastat 专用，datastat 走 release-config）→

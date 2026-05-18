@@ -112,9 +112,18 @@ runner pod 在 $GITHUB_WORKSPACE 跑 yml 步骤
 
 两份模板的索引和选择规则：[`../teams/templates/Issue Submission/README.md`](../spec/teams/templates/Issue%20Submission/README.md)
 
+> **AI-native 模板（通用，推荐）**：组织通用 issue 模板仓（`<org>/.github` 的
+> `.github/ISSUE_TEMPLATE/`）里另有一个「AI-native 需求」模板——**带「目标服务」下拉**。
+> 它是**追加的可选项，不覆盖**任何既有模板（仓库级 `.github/ISSUE_TEMPLATE/` 会屏蔽
+> 组织通用模板，所以 AI-native 模板**必须放组织通用仓、绝不放业务仓**）。
+> 用它提的 issue 在 maintainer 打 `accepted` 后，由通用 workflow
+> `auto-analyze-on-accept`（解析「目标服务」→ 自动贴该服务 `[<服务>需求分析]` 触发词）
+> **自动进入流程 1，无需人工评论触发词**。机制通用，任何已接入服务都适用。
+
 **完成判据**：issue 已提交，正文按模板填全。
 
-**下一步**：等 maintainer 评 `/accepts` → 进阶段 2。
+**下一步**：等 maintainer 评 `/accepts`/打 `accepted` → 进阶段 2（用 AI-native 模板则
+`accepted` 后自动进流程 1）。
 
 **详细**：[`stage-flow/stage-1-issue-submit.md`](stage-flow/stage-1-issue-submit.md)
 
@@ -427,7 +436,7 @@ python3 src/deployer/deploy.py \
 
 | 文件                                                                                                                                           | 干啥                                                                                                                    | 示例（可点）                                                                                                                                                                                                               |
 | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `.github/services/<id>.yaml`                                                                                                                   | **服务注册表** — 定义触发词 / 菜单文案 / 各阶段 handler（in-repo / forward / disabled）+ `implement:` 段指向 tools_repo | [`datacenter.yaml`](../spec/teams/external-workflows/services-examples/datacenter.yaml)（已接通 3 阶段）/ [`robot.yaml`](../spec/teams/external-workflows/services-examples/robot.yaml)（仅 analyze 已通，implement 待接） |
+| `.github/services/<id>.yaml`                                                                                                                   | **服务注册表** — 定义触发词 / 菜单文案 / 各阶段 handler（in-repo / forward / disabled）+ `implement:` 段指向 tools_repo | [`datacenter.yaml`](../spec/teams/external-workflows/services-examples/datacenter.yaml)（已接通 3 阶段）/ [`robot.yaml`](../spec/teams/external-workflows/services-examples/robot.yaml)（analyze + implement 已接通，已真实跑通；接入实况见 [robot 示例](../specification-example/project/robot/README.md)） |
 | **本仓 Secrets**：`OPENCODE_API_KEY` / `BACKLOG_REPO_TOKEN`（或 `CROSS_REPO_TOKEN`）/ `AI_TEST_KUBECONFIG`（base64）/ 可选 `LOCAL_DB_PASSWORD` | 各 agent 调 LLM + 跨仓 clone/push + deployer 调 K8s + APIMagic per-PR PG                                                | 凭据档位：[`generic-layer/credentials-storage.md`](generic-layer/credentials-storage.md)                                                                                                                                   |
 | **本仓 Variables**（可选）：`GATE_FIX_ROUNDS`（默认 3）/ `APIMAGIC_DB_HOST`（默认 `postgresql`）                                               | 调对抗循环最大轮数 / per-PR APIMagic DB host                                                                            | —                                                                                                                                                                                                                          |
 
