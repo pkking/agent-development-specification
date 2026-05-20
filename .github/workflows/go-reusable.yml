@@ -46,13 +46,24 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Configure git
+    - name: Configure git with secure token handling
       shell: bash
+      env:
+        GH_TOKEN: ${{ secrets.gh-token }}
       run: |
         set -euo pipefail
         git config --global --add safe.directory '*'
-        if [ -n "${{ secrets.gh-token }}" ]; then
-          git config --global url."https://x-access-token:${{ secrets.gh-token }}@github.com/".insteadOf "https://github.com/"
+        
+        # Secure token handling: use temporary .netrc file with strict permissions
+        # This avoids writing tokens to persistent git config files
+        if [ -n "${GH_TOKEN:-}" ]; then
+          NETRC_FILE="${HOME}/.netrc"
+          # Create .netrc with token for github.com
+          echo "machine github.com login x-access-token password ${GH_TOKEN}" > "${NETRC_FILE}"
+          # Set strict permissions (only owner can read)
+          chmod 600 "${NETRC_FILE}"
+          # Configure git to use .netrc for authentication
+          git config --global credential.helper 'store --file ~/.netrc'
         fi
 
     - name: Cache Go modules and build
@@ -77,3 +88,11 @@ jobs:
         set -euo pipefail
         chmod +x scripts/go_coverage_check.sh
         ./scripts/go_coverage_check.sh
+
+    - name: Cleanup credentials
+      shell: bash
+      if: always()
+      run: |
+        # Always clean up credential files to prevent token leakage
+        rm -f "${HOME}/.netrc" 2>/dev/null || true
+        git config --global --unset credential.helper 2>/dev/null || true

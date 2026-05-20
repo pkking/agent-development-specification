@@ -29,6 +29,12 @@ These values are enforced consistently across all projects using this workflow. 
 
 - `gh-token` (optional): GitHub token for private repo access
 
+**Security Note:** This workflow uses a secure token handling mechanism:
+- Tokens are stored in a temporary `.netrc` file with strict permissions (600)
+- The `.netrc` file is automatically cleaned up at the end of the job
+- This approach prevents token leakage through persistent git config files
+- Safe for both public and private repositories (fork PRs cannot access secrets)
+
 **Example usage:**
 
 ```yaml
@@ -212,6 +218,14 @@ All workflows use SHA-pinned actions for supply chain security:
 - `actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff` (v5)
 - `securego/gosec@4a3bd8af174872c778439083ded7adbf3747e770` (v2.26.1)
 - `aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25` (v0.36.0)
+
+**Token Security:**
+
+Secrets are handled securely in all workflows:
+- Tokens are passed via environment variables, never hardcoded
+- Temporary credential files use strict permissions (chmod 600)
+- Automatic cleanup ensures no credential leakage
+- Fork PRs cannot access secrets (GitHub's built-in protection)
 
 ## Related Issue
 
