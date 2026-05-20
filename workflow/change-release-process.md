@@ -59,22 +59,22 @@
 
 ## 2. 两条 workflow
 
-| workflow | 触发 | 跑在哪 | 职责 |
-| -------- | ---- | ------ | ---- |
+| workflow            | 触发                                                                                 | 跑在哪                                                          | 职责                                                                                                                                 |
+| ------------------- | ------------------------------------------------------------------------------------ | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | **workflow_change** | release-mgmt 仓 Issue `opened`（标题含 发布/变更/版本）；或评论 `[重新生成变更计划]` | `self-hosted, ai-dev-runner`（复用发布 runner，非 GitHub 托管） | 按 [`../spec/teams/prompts/ai-release-plan.md`](../spec/teams/prompts/ai-release-plan.md) 用 AI 生成《变更计划说明书》→ 提 PR → 回评 |
-| **release** | 该 Issue 下评论 `同意发布`（演练）/ `同意发布 正式`（正式） | `self-hosted, ai-dev-runner` | 鉴权 → 变更计划存在性硬门禁 → 多检查项串行 → 构建/部署测试 → 生产准入 → 部署生产；fail-fast |
+| **release**         | 该 Issue 下评论 `同意发布`（演练）/ `同意发布 正式`（正式）                          | `self-hosted, ai-dev-runner`                                    | 鉴权 → 变更计划存在性硬门禁 → 多检查项串行 → 构建/部署测试 → 生产准入 → 部署生产；fail-fast                                          |
 
 > Runner 标签与既有流水线一致，见 [`generic-layer/runners.md`](generic-layer/runners.md)。两条均**不用 GitHub 托管 runner**。
 
 ## 3. 角色与触发约定
 
-| 项 | 约定 |
-| -- | ---- |
+| 项           | 约定                                                                                                                       |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------- |
 | 谁能触发发布 | 仓库变量 `vars.RELEASE_APPROVERS`（逗号分隔 GitHub 登录名）里的**固定角色**；精确匹配，不在白名单 → 拒绝并回评、流水线停止 |
-| 演练 vs 正式 | `同意发布` → dry_run（不真推镜像 / 不真改部署仓，只验证全链路）；`同意发布 正式` / `同意发布 --prod` → 正式发布 |
-| 服务名 | 从 Issue 标题自动解析（"发布 \<服务\> ..." / "\<服务\> vX.Y.Z ..."），与具体服务解耦 |
-| 变更计划缺失 | release 流水线第 ② 步硬门禁：`issue_docs/<N>/Release/*.md` 不在 main → 立即停止并回评（必须先合入变更计划 PR） |
-| merge | 变更计划 PR 的合入**永远由人完成**，workflow 不自动 merge |
+| 演练 vs 正式 | `同意发布` → dry_run（不真推镜像 / 不真改部署仓，只验证全链路）；`同意发布 正式` / `同意发布 --prod` → 正式发布            |
+| 服务名       | 从 Issue 标题自动解析（"发布 \<服务\> ..." / "\<服务\> vX.Y.Z ..."），与具体服务解耦                                       |
+| 变更计划缺失 | release 流水线第 ② 步硬门禁：`issue_docs/<N>/Release/*.md` 不在 main → 立即停止并回评（必须先合入变更计划 PR）             |
+| merge        | 变更计划 PR 的合入**永远由人完成**，workflow 不自动 merge                                                                  |
 
 ## 4. 变更计划说明书
 
@@ -95,21 +95,21 @@ release 流水线把检查项拆成独立 job，GitHub Actions `needs` 默认仅
 
 ## 6. 与流程 3 的衔接
 
-| 阶段 | 由谁负责 | 文档 |
-| ---- | -------- | ---- |
-| 合入实现 PR + 上 beta | 流水线流程 3 | [`stage-flow/flow-3-release.md`](stage-flow/flow-3-release.md) |
-| beta 值守 / 灰度策略 | 团队发布规范 | [`../spec/teams/standards/release.md`](../spec/teams/standards/release.md) |
-| **生产发布治理（本文件）** | release-mgmt：变更计划 + 同意发布门禁 | 本文件 |
-| 故障 / 回滚 / 复盘 | — | [`release-process.md`](release-process.md) §回滚、[`../spec/teams/templates/Learn From the Incident/`](../spec/teams/templates/Learn%20From%20the%20Incident/) |
+| 阶段                       | 由谁负责                              | 文档                                                                                                                                                           |
+| -------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 合入实现 PR + 上 beta      | 流水线流程 3                          | [`stage-flow/flow-3-release.md`](stage-flow/flow-3-release.md)                                                                                                 |
+| beta 值守 / 灰度策略       | 团队发布规范                          | [`../spec/teams/standards/release.md`](../spec/teams/standards/release.md)                                                                                     |
+| **生产发布治理（本文件）** | release-mgmt：变更计划 + 同意发布门禁 | 本文件                                                                                                                                                         |
+| 故障 / 回滚 / 复盘         | —                                     | [`release-process.md`](release-process.md) §回滚、[`../spec/teams/templates/Learn From the Incident/`](../spec/teams/templates/Learn%20From%20the%20Incident/) |
 
 ## 7. 失败处理
 
-| 失败点 | 行为 |
-| ------ | ---- |
-| 变更计划未生成（AI 输出空 / 命中敏感） | workflow_change fail，回评 Issue 提示 `[重新生成变更计划]` 重试 |
-| 评论人不在白名单 | release 鉴权 job fail，回评拒绝原因，不执行任何发布动作 |
-| 变更计划不在 main | release 第 ② 步 fail，回评"先合入变更计划 PR" |
-| 任一检查/准入项失败 | 下游 job 跳过，`on_failure` 回评"某检查项失败，已停止"，修复后重评 `同意发布` 重跑 |
+| 失败点                                 | 行为                                                                               |
+| -------------------------------------- | ---------------------------------------------------------------------------------- |
+| 变更计划未生成（AI 输出空 / 命中敏感） | workflow_change fail，回评 Issue 提示 `[重新生成变更计划]` 重试                    |
+| 评论人不在白名单                       | release 鉴权 job fail，回评拒绝原因，不执行任何发布动作                            |
+| 变更计划不在 main                      | release 第 ② 步 fail，回评"先合入变更计划 PR"                                      |
+| 任一检查/准入项失败                    | 下游 job 跳过，`on_failure` 回评"某检查项失败，已停止"，修复后重评 `同意发布` 重跑 |
 
 ## 8. 关联
 

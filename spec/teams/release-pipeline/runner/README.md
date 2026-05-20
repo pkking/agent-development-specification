@@ -46,6 +46,7 @@ gh api repos/opensourceways/release-mgmt/actions/runners --jq '.runners[].name'
 ## 仓库 Secret / Variable（运维在 GitHub Settings 配，AI 不代填真值）
 
 见 [`../../AGENTS.md`](../../AGENTS.md) §运行前置：
+
 - 必需：`RELEASE_APPROVERS`(Variable，真实审批人 GitHub 登录名)、
   `RELEASE_MGMT_TOKEN`(Secret，repo+workflow scope PAT)、`OPENCODE_API_KEY`(Secret)
 - 条件：`SWR_*`(仅 image.mode=swr)、`INFRA_COMMON_REPO_TOKEN`(仅 deploy.mode≠none)

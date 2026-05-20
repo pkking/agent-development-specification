@@ -1,6 +1,7 @@
 根据版本发布 Issue 和仓库 Tag 差异，自动编写变更计划说明书。
 
 ## 输入参数
+
 - $ARGUMENTS: release-mgmt Issue + 仓库@Tag 对（空格分隔）
   - 格式：`release-mgmt#N repo1@tag1 [repo2@tag2...]`
   - 示例：`release-mgmt#5 infra-community@v1.2.0 robot-gitee-openeuler-ci@v0.8.0`
@@ -8,7 +9,9 @@
   - **repo@tag**：仓库名@base tag，自动比较该仓库主干分支（或用户指定的 release 分支）与 base tag 的差异，提取关联 Issue
 
 ## 核心理念
+
 > 变更计划基于（仓库 + base tag）差异自动发现关联 Issue 和 PR：
+>
 > - 输入 release-mgmt Issue 编号 + 一组仓库@tag 对
 > - 自动 diff 各仓库主干分支（main/master）或用户指定的 release 分支与 base tag，提取差异中关联的 Issue
 > - 基于发现的 Issue 和 PR 编写统一的变更计划说明书
@@ -17,6 +20,7 @@
 > - 每次实践产生复利：完成后沉淀经验到 context/experience/
 
 ## 参考规范
+
 - 变更计划模板：`templates/Release/#1 xx Change Plan Specification.md`
 - 编写经验：`context/experience/变更计划编写经验.md`
 - 设计和开发规范：`context/team/` 目录
@@ -26,16 +30,19 @@
 ### 第一步：解析输入并获取差异 Issue
 
 **解析输入参数**：
+
 1. 提取 `release-mgmt#N` → 版本发布 Issue 编号
 2. 提取所有 `repo@tag` 对 → 仓库名和 base tag 列表
 
 **获取 release-mgmt Issue 信息**：
+
 1. 使用 `gh api repos/opensourceways/release-mgmt/issues/{issueNumber}` 获取 Issue 信息
 2. 解析版本名称、发布描述
 
 **自动发现各仓库差异关联的 Issue**：
 
 对每个 `repo@tag` 对：
+
 1. **确定比较分支**：默认为 main/master；如用户指定了 release 分支（如 `releaseXX`），使用该分支
 2. **获取 tag 到分支的 commit 差异**：
    ```bash
@@ -60,13 +67,14 @@
 **汇总发现的 Issue 和 PR**：
 
 | 仓库 | Issue | 标题 | 关联 PR | 来源（commit/PR） |
-|------|-------|------|--------|-----------------|
+| ---- | ----- | ---- | ------- | ----------------- |
 
 **检查外部平台 Issue**：扫描 Issue body 和 commit message 中的外部平台链接（gitcode.com、gitee.com 等）；如用户在会话中提供了额外的外部平台 Issue 链接，一并记录。
 
 ### 第二步：收集各关联 Issue 的详细信息
 
 对每个发现的关联 Issue：
+
 1. 使用 `gh api repos/{owner}/{repo}/issues/{number}` 获取 Issue 详情（标题、标签、状态）
 2. **识别 Issue 来源平台**：
    - GitHub Issue：使用 `gh api repos/{owner}/{repo}/issues/{number}/timeline` 或搜索关联 PR
@@ -78,7 +86,7 @@
 6. 汇总信息：
 
 | 仓库 | Issue | 标题 | 变更类型 | 关联 PR | 状态 |
-|------|-------|------|---------|--------|------|
+| ---- | ----- | ---- | -------- | ------- | ---- |
 
 #### 第二步附1：读取生命周期文档
 
@@ -94,6 +102,7 @@
    - 提取：测试结果、已验证场景、遗留风险
 
 > **用途**：这些文档为后续编写「详细执行步骤」「生产环境验证」「回滚方案」提供依据。
+>
 > - 架构设计中的部署架构 → 指导执行步骤和发布顺序
 > - 架构设计中的配置项 → 指导变更内容和回滚范围
 > - 测试策略/报告中的验证方法 → 直接复用为生产验证方案
@@ -117,6 +126,7 @@
 > **部署脚本仓**（helm-charts、infra-community 等）：仅获取文件列表作为参考（如提取 namespace、镜像版本、资源配置等），不需要深入分析代码逻辑。
 
 ### 第三步：分析变更等级
+
 根据所有关联变更综合判定版本级变更等级：
 
 1. 逐项评估每个 Issue 的单项等级：
@@ -129,6 +139,7 @@
    - 如存在跨服务联动（多个仓库同时变更），等级可能需要上调
 
 ### 第四步：确定发布顺序
+
 1. 分析各仓库间的依赖关系（基础配置 → 核心服务 → 依赖服务）
 2. 生成发布顺序
 
@@ -143,6 +154,7 @@
 基于模板 `templates/Release/#1 xx Change Plan Specification.md` 填写：
 
 #### 1. 变更概览
+
 - **需求或版本发布Task链接**：版本发布 Issue 链接
 - **变更内容概要**：一句话概括本次变更的核心内容（做什么、涉及哪些仓库、部署到哪里）
 - **关联测试报告链接**：如有（如不涉及可不填）
@@ -154,36 +166,42 @@
 - **关联业务 PR**：汇总所有关联的业务 PR（backlog 仓以外），格式 `org/repo#PRNumber`
 
 #### 变更详细内容
+
 基于 PR 代码变更，按仓库汇总本次版本发布的实际变更内容：
 
-| 仓库 | PR | 变更文件 | 变更说明 |
-|------|-----|---------|---------|
+| 仓库    | PR          | 变更文件                 | 变更说明       |
+| ------- | ----------- | ------------------------ | -------------- |
 | {repo1} | #{PRNumber} | 新增/修改/删除的关键文件 | 变更的功能说明 |
-| ... | ... | ... | ... |
+| ...     | ...         | ...                      | ...            |
 
 > **编写依据**：第二步附2 获取的 PR 代码变更内容。
 > **核心代码仓**：详细列出新增/修改/删除的文件及功能说明。
 > **部署脚本仓**：仅列出关键配置（namespace、镜像版本、资源配置等）。
 
 #### 2. 详细执行步骤
+
 基于 PR 代码变更和生命周期文档（架构设计中的部署架构、配置项等），按发布顺序，为每个仓库编写原子化执行步骤：
 
-| 步骤 | 操作类型 | 操作内容描述 | 预期结果 | 执行人 |
-|------|---------|------------|---------|--------|
-| 1 | 发布 {repo1} | 触发 {repo1} 发布流水线，选本分支 xxx | 流水线执行成功，生产部署完成 | @xxx |
-| 2 | 验证 {repo1} | 检查 {repo1} 服务健康状态 | 服务正常运行 | @xxx |
-| 3 | 发布 {repo2} | 触发 {repo2} 发布流水线 | 流水线执行成功 | @xxx |
-| ... | ... | ... | ... | ... |
+| 步骤 | 操作类型     | 操作内容描述                          | 预期结果                     | 执行人 |
+| ---- | ------------ | ------------------------------------- | ---------------------------- | ------ |
+| 1    | 发布 {repo1} | 触发 {repo1} 发布流水线，选本分支 xxx | 流水线执行成功，生产部署完成 | @xxx   |
+| 2    | 验证 {repo1} | 检查 {repo1} 服务健康状态             | 服务正常运行                 | @xxx   |
+| 3    | 发布 {repo2} | 触发 {repo2} 发布流水线               | 流水线执行成功               | @xxx   |
+| ...  | ...          | ...                                   | ...                          | ...    |
 
 #### 3. 生产环境验证
+
 基于 PR 代码变更和生命周期文档（测试策略中的验证方法、测试报告中的验证场景），编写具体验证方案：
+
 - 各服务独立验证（健康检查、日志确认）
 - 跨服务端到端验证（如有依赖关系）
 - 具体验证命令/接口/日志关键词
 - 复用测试报告中已验证的场景和方法
 
 #### 4. 回滚方案
+
 基于 PR 代码变更和生命周期文档（架构设计中的部署架构和配置项、需求分析中的影响面），编写回滚方案：
+
 - 回滚触发条件
 - 按发布顺序的逆序编写回滚步骤
 - 明确是全量回退还是部分回退的判断标准
@@ -207,13 +225,14 @@
 > **刷新原则**：PR 标题、合入状态以实时 API 查询结果为准，不依赖缓存或上次记录。
 
 ### 第六步：创建 Release Tag 计划
+
 在变更计划末尾追加版本号和 Tag 规划：
 
 ```markdown
 ## 5. 版本号与 Release Tag
 
-| 仓库 | 版本号 | Tag 创建时机 |
-|------|--------|------------|
+| 仓库    | 版本号   | Tag 创建时机       |
+| ------- | -------- | ------------------ |
 | {repo1} | v{x.y.z} | 生产部署验证通过后 |
 | {repo2} | v{x.y.z} | 生产部署验证通过后 |
 ```
@@ -221,12 +240,14 @@
 ### 第七步：更新 Issue 描述
 
 使用 `gh api` 更新 release-mgmt Issue body，补充：
+
 - 变更等级
 - 发布顺序
 - 变更计划文档链接
 - 自动发现的关联 Issue 列表
 
 **Issue 描述中的关联 Issue 必须使用完整链接**：
+
 - GitHub Issue：`https://github.com/{owner}/{repo}/issues/{number}`（GitHub 页面可自动渲染）
 - 外部平台 Issue（GitCode、Gitee 等）：GitHub 无法自动关联，必须显式写出完整 URL 并标注平台名
   - 示例：`[gitcode#123](https://gitcode.com/org/repo/issues/123) (GitCode)`
@@ -236,26 +257,36 @@
   3. 如果无法自动获取，向用户询问是否有关联的外部平台 Issue
 
 **Issue body 格式规范**：
+
 ```markdown
 ### 任务描述
 
 {版本发布描述}，包含以下需求：
+
 - [{owner}/{repo}#{number}: {标题}]({完整URL})
 - [{外部平台标识}#{number}: {标题}]({完整URL}) (GitCode)
 
 ### 比较基准
-| 仓库 | Base Tag | 比较分支 |
-|------|----------|---------|
-| {repo1} | {tag1} | main |
-| {repo2} | {tag2} | main |
+
+| 仓库    | Base Tag | 比较分支 |
+| ------- | -------- | -------- |
+| {repo1} | {tag1}   | main     |
+| {repo2} | {tag2}   | main     |
 
 ### 变更等级
+
 ...
+
 ### 发布顺序
+
 ...
+
 ### 变更计划
+
 ...
+
 ### 发布进度
+
 | 关联 PR | 仓库 | 标题 | 状态 |
 ...
 ```
@@ -285,6 +316,7 @@
    git commit -m "docs: {简短描述，如 add #1 change plan specification}"
    ```
 4. **推送并创建 PR**：
+
    ```bash
    git push -u origin {branch}
    gh pr create --title "{PR 标题}" --body "$(cat <<'EOF'
@@ -311,6 +343,7 @@
 > **PR 标题**：`docs: #{issueId} {变更名称} change plan`，保持简短。
 
 ### 第十步：输出总结
+
 1. 创建/更新的文件清单
 2. 版本变更等级及判定理由
 3. 发布顺序及依赖关系
@@ -320,6 +353,7 @@
 7. **PR 链接**
 
 ## 关键规范
+
 - **发布模式**：统一为一种模式——基于 release-mgmt Issue + 仓库@tag 对，自动 diff 发现关联 Issue
 - **输入格式**：`release-mgmt#N repo1@tag1 [repo2@tag2...]`
 - **比较分支**：默认为各仓库的 main/master 分支；用户可指定 release 分支（如 `releaseXX`）
@@ -341,6 +375,7 @@
 ### 平台识别
 
 关联 Issue 可能涉及第三方平台的仓库和 PR。通过以下方式识别：
+
 - Issue body 或 commit message 中包含 `gitcode.com` 链接 → GitCode 平台
 - Issue body 或 commit message 中包含 `gitee.com` 链接 → Gitee 平台
 - Issue 标签或标题中标注了平台信息
@@ -350,16 +385,19 @@
 GitCode 使用 Gitea API v5，认证通过 HTTP Header 传递（避免 Token 出现在 URL 参数中）。
 
 **获取仓库 PR 列表**：
+
 ```bash
 curl -H "Authorization: token {token}" "https://api.gitcode.com/api/v5/repos/{owner}/{repo}/pulls?state=all"
 ```
 
 **获取单个 PR 详情**：
+
 ```bash
 curl -H "Authorization: token {token}" "https://api.gitcode.com/api/v5/repos/{owner}/{repo}/pulls/{number}"
 ```
 
 **搜索关联 PR**（通过 Issue 编号）：
+
 - 在 PR 列表中按标题或 body 搜索 Issue 编号
 - 或通过 Issue 的 timeline/events API 查找引用
 
@@ -368,6 +406,7 @@ curl -H "Authorization: token {token}" "https://api.gitcode.com/api/v5/repos/{ow
 ### Gitee API（预留）
 
 如未来涉及 Gitee 平台仓库，使用 Gitee API v5：
+
 ```bash
 curl -H "Authorization: token {token}" "https://gitee.com/api/v5/repos/{owner}/{repo}/pulls?state=all"
 ```
@@ -375,6 +414,7 @@ curl -H "Authorization: token {token}" "https://gitee.com/api/v5/repos/{owner}/{
 ### PR 信息格式统一
 
 不论来源平台，变更计划中 PR 信息统一记录以下字段：
+
 - **PR 链接**：完整 URL
 - **PR 标题**：从 API 实时获取
 - **PR 状态**：open / merged / closed

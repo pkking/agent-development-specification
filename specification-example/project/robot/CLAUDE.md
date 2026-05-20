@@ -2,16 +2,17 @@
 
 本仓是「机器人」服务接入 backlog 多服务 AI 流水线的**工具仓**（与
 `opensourceways/om-datacenter` 对称：装通用 `src/orchestrate.sh` + `.github/agents/*`
-+ `src/deployer/` + `src/gates/` + `src/tests/`，对项目零认知）。
+
+- `src/deployer/` + `src/gates/` + `src/tests/`，对项目零认知）。
 
 `backlog/.github/workflows/implement.yml` 会 clone 本仓 + 按 `.gitmodules` 拉
 **唯一 dev 仓 `community-robots`**，然后 `bash src/orchestrate.sh` 跑四 agent 对抗。
 
 ## dev 仓
 
-| 子模块 | 角色 | 技术栈 | 基础分支 |
-|--------|------|--------|---------|
-| `community-robots` | 机器人接入服务（Gitee 机器人）| Go | `main` |
+| 子模块             | 角色                           | 技术栈 | 基础分支 |
+| ------------------ | ------------------------------ | ------ | -------- |
+| `community-robots` | 机器人接入服务（Gitee 机器人） | Go     | `main`   |
 
 机器人是**单仓服务**——`target_repos` 只有 `community-robots` 或 `none`，没有 umbrella、没有多子仓联动。
 
@@ -52,6 +53,7 @@
 （严格一行 JSON）：`{"mode":"normal|none","target_repos":["community-robots"],"add_community":null,"reason":""}`
 
 **必须输出 `none` 的例外**（命中即 `mode=none`，不实施，回评正确处理路径）：
+
 1. issue 实际在讲 `.github/` / workflow / CI、或 backlog/robot-tools 自身的脚本与元文件
 2. 关于硬编码凭据 / token / kubeconfig 的安全告警类
 3. `community-robots` 在 `/tmp/opencode/submodule_status.json` 的 `bad` 数组里
