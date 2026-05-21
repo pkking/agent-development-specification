@@ -30,7 +30,6 @@ env:
   GOPRIVATE: github.com/opensourceways/*
   GONOSUMDB: github.com/opensourceways/*
   GOPROXY: https://goproxy.cn,direct
-  # Coverage thresholds (defined at organization level, not configurable per project)
   FULL_COVERAGE_THRESHOLD: 10.0
   INC_COVERAGE_THRESHOLD: 80.0
   TEST_PACKAGES: ${{ inputs.test-packages }}
@@ -41,6 +40,20 @@ jobs:
     container:
       image: golang:${{ inputs.go-version }}-bookworm
     steps:
+    - name: Security check - reject secrets in public repos
+      shell: bash
+      env:
+        GH_TOKEN: ${{ secrets.gh-token }}
+        REPO_PRIVATE: ${{ github.event.repository.private }}
+      run: |
+        set -euo pipefail
+        if [ -n "${GH_TOKEN:-}" ] && [ "${REPO_PRIVATE}" != "true" ]; then
+          echo "::error::SECURITY VIOLATION: Public repository cannot pass gh-token secret."
+          echo "::error::Contributors with write access can exfiltrate secrets through workflow modifications."
+          echo "::error::See: https://github.com/opensourceways/agent-development-specification/blob/main/.github/workflows/README.md"
+          exit 1
+        fi
+
     - name: Checkout (full history for incremental coverage)
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
@@ -54,15 +67,10 @@ jobs:
         set -euo pipefail
         git config --global --add safe.directory '*'
         
-        # Secure token handling: use temporary .netrc file with strict permissions
-        # This avoids writing tokens to persistent git config files
         if [ -n "${GH_TOKEN:-}" ]; then
           NETRC_FILE="${HOME}/.netrc"
-          # Create .netrc with token for github.com
           echo "machine github.com login x-access-token password ${GH_TOKEN}" > "${NETRC_FILE}"
-          # Set strict permissions (only owner can read)
           chmod 600 "${NETRC_FILE}"
-          # Configure git to use .netrc for authentication
           git config --global credential.helper 'store --file ~/.netrc'
         fi
 
@@ -93,6 +101,5 @@ jobs:
       shell: bash
       if: always()
       run: |
-        # Always clean up credential files to prevent token leakage
         rm -f "${HOME}/.netrc" 2>/dev/null || true
         git config --global --unset credential.helper 2>/dev/null || true

@@ -51,6 +51,12 @@ Do NOT pass sensitive secrets to this workflow from public repositories. Any con
   - run: echo "${GH_TOKEN}" | xxd # Hex dump bypass
   ```
 
+**Built-in Protection:** This workflow automatically rejects `gh-token` when called from a public repository. If you attempt to pass secrets from a public repo, the workflow will fail with a security error:
+
+```
+::error::SECURITY VIOLATION: Public repository cannot pass gh-token secret.
+```
+
 **Recommended alternatives for public repositories:**
 
 1. Do not pass `gh-token` - use public Go proxy (GOPROXY)
@@ -265,11 +271,12 @@ Secrets are handled securely in all workflows:
 - Temporary credential files use strict permissions (chmod 600)
 - Automatic cleanup ensures no credential leakage
 - Fork PRs cannot access secrets (GitHub's built-in protection)
+- **Public repo secrets rejection**: Workflow fails if `gh-token` is passed from a public repository
 
-**⚠️ Important:** The above protections only prevent accidental leakage. They cannot prevent intentional exfiltration by contributors with write access. For public repositories:
+**⚠️ Important:** The above protections prevent accidental leakage and enforce security policy. For public repositories:
 
+- The workflow will reject secrets at runtime (fails immediately)
 - Never store sensitive secrets in repository settings
-- Never pass secrets to workflows from public repos
 - Use GitHub Apps or public proxy services instead
 
 ## Related Issue
